@@ -1,0 +1,8 @@
+.*
+*.pyc
+*.gz
+*.tgz
+venv
+docs/CoNLL_*_Eval_Agreement.*
+conll15st-*
+conll16st-*

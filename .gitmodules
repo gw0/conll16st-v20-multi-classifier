@@ -1,0 +1,3 @@
+[submodule "conll16st_evaluation"]
+	path = conll16st_evaluation
+	url = https://github.com/attapol/conll16st/
