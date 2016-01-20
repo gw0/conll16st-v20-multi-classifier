@@ -35,6 +35,7 @@ sudo apt-get install -y python-h5py libyaml-dev graphviz
 pip install git+https://github.com/Theano/Theano.git
 pip install pydot-ng
 pip install git+https://github.com/fchollet/keras.git
+pip install pyparsing
 
 # Development
 pip install pytest
