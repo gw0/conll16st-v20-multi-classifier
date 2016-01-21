@@ -9,7 +9,7 @@ __license__ = "GPLv3+"
 
 import pyparsing
 
-from load import load_parses
+from files import load_parses
 
 
 def get_parsetrees(parses):

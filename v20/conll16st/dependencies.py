@@ -7,11 +7,11 @@ Process word/token dependencies from CoNLL16st corpus (from `parses.json`).
 __author__ = "GW [http://gw.tnode.com/] <gw.2016@tnode.com>"
 __license__ = "GPLv3+"
 
-from load import load_parses
+from files import load_parses
 
 
 def get_dependencies(parses):
-    """Extract word/token dependencies by document and token ids from CoNLL16st corpus.
+    """Extract word/token dependencies by document id and token id pairs from CoNLL16st corpus.
 
         # from ["nn", "Inc.-4", "Kemper-1"]:
         dependencies["wsj_1000"][3][0] = "nn"
