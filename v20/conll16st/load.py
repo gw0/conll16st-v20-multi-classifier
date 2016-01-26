@@ -11,7 +11,7 @@ from files import load_parses, load_raws, load_relations_gold
 from words import get_words, get_pos_tags, get_word_metas
 from dependencies import get_dependencies
 from parsetrees import get_parsetrees
-from relations import get_relations, get_relation_metas, add_relation_tags
+from relations import get_relations, get_relation_types, get_relation_senses, add_relation_tags
 
 
 def load_all(dataset_dir, doc_ids=None, filter_types=None, filter_senses=None):
@@ -37,9 +37,10 @@ def load_all(dataset_dir, doc_ids=None, filter_types=None, filter_senses=None):
 
     # extract data by relation id
     relations = get_relations(relationsnos_gold)
-    relation_metas = get_relation_metas(relations_gold)
+    relation_types = get_relation_types(relations_gold)
+    relation_senses = get_relation_senses(relations_gold)
 
     # add extra fields
-    add_relation_tags(word_metas, relation_metas)
+    add_relation_tags(word_metas, relation_types, relation_senses)
 
-    return doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, relations, relation_metas, relations_gold
+    return doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, relations, relation_types, relation_senses, relations_gold

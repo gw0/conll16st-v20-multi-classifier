@@ -71,33 +71,31 @@ def get_relations(relations_gold):
     return relations
 
 
-def get_relation_metas(relations_gold):
-    """Extract discourse relation types, senses and other by relation id from CoNLL16st corpus.
+def get_relation_types(relations_gold):
+    """Extract discourse relation types by relation id from CoNLL16st corpus.
 
-        relation_metas[14887] = {
-            'Type': 'Explicit',
-            'Sense': ['Contingency.Cause.Reason'],
-            'DocID': "wsj_1000",
-            'ID': 14887,
-        }
+        relation_types[14887] = 'Explicit'
     """
 
-    relation_metas = {}
+    relation_types = {}
     for rel_id, gold in relations_gold.iteritems():
-        doc_id = gold['DocID']
-
-        # save relation sense
-        rel_sense = {
-            'Type': gold['Type'],
-            'Sense': gold['Sense'],
-            'DocID': doc_id,
-            'ID': rel_id,
-        }
-        relation_metas[rel_id] = rel_sense
-    return relation_metas
+        relation_types[rel_id] = gold['Type']
+    return relation_types
 
 
-def add_relation_tags(word_metas, relation_metas):
+def get_relation_senses(relations_gold):
+    """Extract discourse relation senses by relation id from CoNLL16st corpus.
+
+        relation_senses[14887] = ['Contingency.Cause.Reason']
+    """
+
+    relation_senses = {}
+    for rel_id, gold in relations_gold.iteritems():
+        relation_senses[rel_id] = gold['Sense']
+    return relation_senses
+
+
+def add_relation_tags(word_metas, relation_types, relation_senses):
     """Add discourse relation tags to metadata of words/tokens.
 
         word_metas['wsj_1000'][0] = {
@@ -110,11 +108,11 @@ def add_relation_tags(word_metas, relation_metas):
         for meta in word_metas[doc_id]:
             meta['RelationTags'] = []
             for rel_id, rel_span in zip(meta['RelationIDs'], meta['RelationSpans']):
-                if rel_id not in relation_metas:
+                if rel_id not in relation_types or rel_id not in relation_senses:
                     continue  # skip missing relations
 
-                rel_type = relation_metas[rel_id]['Type']
-                rel_sense = relation_metas[rel_id]['Sense'][0]  # only first sense
+                rel_type = relation_types[rel_id]
+                rel_sense = relation_senses[rel_id][0]  # only first sense
 
                 # save to metadata
                 rel_tag = ":".join([rel_type, rel_sense, str(rel_id), rel_span])
@@ -147,18 +145,24 @@ def test_relations():
     rel0 = relations[t_rel0['ID']]
     assert rel0 == t_rel0
 
-def test_relation_metas():
+def test_relation_types():
     dataset_dir = "./conll16st-en-trial"
-    t_rel0 = {
-        'Type': 'Explicit',
-        'Sense': ['Contingency.Cause.Reason'],
-        'DocID': "wsj_1000",
-        'ID': 14887,
-    }
+    t_rel0_id = 14887
+    t_rel0 = 'Explicit'
 
     relations_gold = load_relations_gold(dataset_dir)
-    relation_metas = get_relation_metas(relations_gold)
-    rel0 = relation_metas[t_rel0['ID']]
+    relation_types = get_relation_types(relations_gold)
+    rel0 = relation_types[t_rel0_id]
+    assert rel0 == t_rel0
+
+def test_relation_senses():
+    dataset_dir = "./conll16st-en-trial"
+    t_rel0_id = 14887
+    t_rel0 = ['Contingency.Cause.Reason']
+
+    relations_gold = load_relations_gold(dataset_dir)
+    relation_senses = get_relation_senses(relations_gold)
+    rel0 = relation_senses[t_rel0_id]
     assert rel0 == t_rel0
 
 def test_relation_tags():
@@ -175,8 +179,9 @@ def test_relation_tags():
     raws = load_raws(dataset_dir, [doc_id])
     word_metas = get_word_metas(parses, raws)
     relations_gold = load_relations_gold(dataset_dir)
-    relation_metas = get_relation_metas(relations_gold)
-    add_relation_tags(word_metas, relation_metas)
+    relation_types = get_relation_types(relations_gold)
+    relation_senses = get_relation_senses(relations_gold)
+    add_relation_tags(word_metas, relation_types, relation_senses)
     assert word_metas[doc_id][t_meta0_id]['RelationTags'] == t_meta0_tags
     assert word_metas[doc_id][t_meta1_id]['RelationTags'] == t_meta1_tags
     assert word_metas[doc_id][t_meta2_id]['RelationTags'] == t_meta2_tags
