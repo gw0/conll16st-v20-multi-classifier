@@ -11,8 +11,8 @@ from files import load_parses, load_raws, load_relations_gold
 from words import get_word_metas
 
 
-def get_relations(relations_gold):
-    """Extract only discourse relation spans of token ids by relation id from CoNLL16st corpus.
+def get_rel_parts(relations_gold):
+    """Extract only discourse relation parts/spans of token ids by relation id from CoNLL16st corpus.
 
         relations[14887] = {
             'Arg1': [465, 466, 467, 468, 469, 470],
@@ -32,7 +32,7 @@ def get_relations(relations_gold):
         }
     """
 
-    relations = {}
+    rel_parts = {}
     for rel_id, gold in relations_gold.iteritems():
         doc_id = gold['DocID']
         punct_type = gold['Punctuation']['PunctuationType']
@@ -67,46 +67,46 @@ def get_relations(relations_gold):
             'TokenMax': max(all_list),
             'TokenCount': len(all_list),
         }
-        relations[rel_id] = rel
-    return relations
+        rel_parts[rel_id] = rel
+    return rel_parts
 
 
-def get_relation_types(relations_gold, filter_types=None):
+def get_rel_types(relations_gold, filter_types=None):
     """Extract discourse relation types by relation id from CoNLL16st corpus.
 
-        relation_types[14887] = 'Explicit'
+        rel_types[14905] = 'Explicit'
     """
 
-    relation_types = {}
+    rel_types = {}
     for rel_id, gold in relations_gold.iteritems():
         rel_type = gold['Type']
         if filter_types and rel_type not in filter_types:
             continue
-        relation_types[rel_id] = rel_type
-    return relation_types
+        rel_types[rel_id] = rel_type
+    return rel_types
 
 
-def get_relation_senses(relations_gold, filter_senses=None):
+def get_rel_senses(relations_gold, filter_senses=None):
     """Extract discourse relation senses by relation id from CoNLL16st corpus.
 
-        relation_senses[14887] = 'Contingency.Cause.Reason'
+        rel_senses[14905] = 'Contingency.Condition'
     """
 
-    relation_senses = {}
+    rel_senses = {}
     for rel_id, gold in relations_gold.iteritems():
         rel_sense = gold['Sense'][0]  # only first sense
         if filter_senses and rel_sense not in filter_senses:
             continue
-        relation_senses[rel_id] = rel_sense
-    return relation_senses
+        rel_senses[rel_id] = rel_sense
+    return rel_senses
 
 
-def add_relation_tags(word_metas, relation_types, relation_senses):
+def add_relation_tags(word_metas, rel_types, rel_senses):
     """Add discourse relation tags to metadata of words/tokens.
 
         word_metas['wsj_1000'][0] = {
             ...
-            'RelationTags': ['Explicit:Contingency.Cause.Reason:14890:Arg1'],
+            'RelationTags': ['Explicit:Expansion.Conjunction:14890:Arg1'],
         }
     """
 
@@ -114,11 +114,11 @@ def add_relation_tags(word_metas, relation_types, relation_senses):
         for meta in word_metas[doc_id]:
             meta['RelationTags'] = []
             for rel_id, rel_span in zip(meta['RelationIDs'], meta['RelationSpans']):
-                if rel_id not in relation_types or rel_id not in relation_senses:
+                if rel_id not in rel_types or rel_id not in rel_senses:
                     continue  # skip missing relations
 
-                rel_type = relation_types[rel_id]
-                rel_sense = relation_senses[rel_id]
+                rel_type = rel_types[rel_id]
+                rel_sense = rel_senses[rel_id]
 
                 # save to metadata
                 rel_tag = ":".join([rel_type, rel_sense, str(rel_id), rel_span])
@@ -127,48 +127,48 @@ def add_relation_tags(word_metas, relation_types, relation_senses):
 
 ### Tests
 
-def test_relations():
+def test_rel_parts():
     dataset_dir = "./conll16st-en-trial"
     t_rel0 = {
-        'Arg1': [465, 466, 467, 468, 469, 470],
-        'Arg1Len': 24,
-        'Arg2': [472, 473, 474, 475, 476],
-        'Arg2Len': 26,
-        'Connective': [471],
-        'ConnectiveLen': 7,
+        'Arg1': [879, 880, 881, 882, 883, 884, 885, 886],
+        'Arg1Len': 46,
+        'Arg2': [877, 889, 890, 891, 892, 893, 894],
+        'Arg2Len': 36,
+        'Connective': [878, 888],
+        'ConnectiveLen': 6,
         'Punctuation': [],
         'PunctuationLen': 0,
-        'PunctuationType': "",
-        'DocID': "wsj_1000",
-        'ID': 14887,
-        'TokenMin': 465,
-        'TokenMax': 476,
-        'TokenCount': 12,
+        'PunctuationType': '',
+        'DocID': 'wsj_1000',
+        'ID': 14905,
+        'TokenMin': 877,
+        'TokenMax': 894,
+        'TokenCount': 17,
     }
 
     relations_gold = load_relations_gold(dataset_dir)
-    relations = get_relations(relations_gold)
-    rel0 = relations[t_rel0['ID']]
+    rel_parts = get_rel_parts(relations_gold)
+    rel0 = rel_parts[t_rel0['ID']]
     assert rel0 == t_rel0
 
-def test_relation_types():
+def test_rel_types():
     dataset_dir = "./conll16st-en-trial"
-    t_rel0_id = 14887
+    t_rel0_id = 14905
     t_rel0 = 'Explicit'
 
     relations_gold = load_relations_gold(dataset_dir)
-    relation_types = get_relation_types(relations_gold)
-    rel0 = relation_types[t_rel0_id]
+    rel_types = get_rel_types(relations_gold)
+    rel0 = rel_types[t_rel0_id]
     assert rel0 == t_rel0
 
-def test_relation_senses():
+def test_rel_senses():
     dataset_dir = "./conll16st-en-trial"
-    t_rel0_id = 14887
-    t_rel0 = 'Contingency.Cause.Reason'
+    t_rel0_id = 14905
+    t_rel0 = 'Contingency.Condition'
 
     relations_gold = load_relations_gold(dataset_dir)
-    relation_senses = get_relation_senses(relations_gold)
-    rel0 = relation_senses[t_rel0_id]
+    rel_senses = get_rel_senses(relations_gold)
+    rel0 = rel_senses[t_rel0_id]
     assert rel0 == t_rel0
 
 def test_relation_tags():
@@ -185,9 +185,9 @@ def test_relation_tags():
     raws = load_raws(dataset_dir, [doc_id])
     word_metas = get_word_metas(parses, raws)
     relations_gold = load_relations_gold(dataset_dir)
-    relation_types = get_relation_types(relations_gold)
-    relation_senses = get_relation_senses(relations_gold)
-    add_relation_tags(word_metas, relation_types, relation_senses)
+    rel_types = get_rel_types(relations_gold)
+    rel_senses = get_rel_senses(relations_gold)
+    add_relation_tags(word_metas, rel_types, rel_senses)
     assert word_metas[doc_id][t_meta0_id]['RelationTags'] == t_meta0_tags
     assert word_metas[doc_id][t_meta1_id]['RelationTags'] == t_meta1_tags
     assert word_metas[doc_id][t_meta2_id]['RelationTags'] == t_meta2_tags

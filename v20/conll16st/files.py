@@ -68,31 +68,31 @@ def load_raws(dataset_dir, doc_ids, raw_ffmts=None):
     return raws
 
 
-def load_relations_gold(dataset_dir, doc_ids=None, with_senses=True, filter_types=None, filter_senses=None, relations_ffmts=None):
+def load_relations_gold(dataset_dir, with_senses=True, doc_ids=None, filter_types=None, filter_senses=None, relations_ffmts=None):
     """Load shallow discourse relations untouched by relation id from CoNLL16st corpus.
 
-        relations[14887] = {
-            'Arg1': {'CharacterSpanList': [[2493, 2517]], 'RawText': 'and told ...', 'TokenList': [[2493, 2496, 465, 15, 8], [2497, 2501, 466, 15, 9], ...]},
-            'Arg2': {'CharacterSpanList': [[2526, 2552]], 'RawText': "they're ...", 'TokenList': [[2526, 2530, 472, 15, 15], [2530, 2533, 473, 15, 16], ...]},
-            'Connective': {'CharacterSpanList': [[2518, 2525]], 'RawText': 'because', 'TokenList': [[2518, 2525, 471, 15, 14]]},
-            'Punctuation': {'CharacterSpanList': [], 'PunctuationType': '', 'RawText': '', 'TokenList': []},
+        relations[14905] = {
+            'Arg1': {'CharacterSpanList': [[4564, 4610]], 'RawText': 'this prompts ...', 'TokenList': [[4564, 4568, 879, 32, 2], [4569, 4576, 880, 32, 3], ...]},
+            'Arg2': {'CharacterSpanList': [[4557, 4560], [4617, 4650]], 'RawText': 'But it ...', 'TokenList': [[4557, 4560, 877, 32, 0], [4617, 4619, 889, 32, 12], ...]},
+            'Connective': {'CharacterSpanList': [[4561, 4563], [4612, 4616]], 'RawText': 'if then', 'TokenList': [[4561, 4563, 878, 32, 1], [4612, 4616, 888, 32, 11]]},
+            'Punctuation': {'CharacterSpanList': [], 'RawText': '', 'TokenList': [], 'PunctuationType': ''},
             'DocID': 'wsj_1000',
-            'ID': 14887,
+            'ID': 14905,
+            'Sense': ['Contingency.Condition'],
             'Type': 'Explicit',
-            'Sense': ['Contingency.Cause.Reason'],
         }
     """
     if relations_ffmts is None:
         relations_ffmts = []
-        if not with_senses:
-            relations_ffmts += [
-                "{}/relations-no-senses.json",  # CoNLL16st filenames
-            ]
         relations_ffmts += [
             "{}/relations.json",        # CoNLL16st filenames
             "{}/pdtb-data.json",        # CoNLL15st filenames
             "{}/pdtb_trial_data.json",  # CoNLL15st trial filenames
         ]
+        if not with_senses:
+            relations_ffmts += [
+                "{}/relations-no-senses.json",  # CoNLL16st filenames
+            ]
 
     # load all relations
     relations = {}
@@ -107,11 +107,11 @@ def load_relations_gold(dataset_dir, doc_ids=None, with_senses=True, filter_type
                     continue
 
                 # filter by relation type
-                if filter_types and relation['Type'] not in filter_types:
+                if filter_types and relation['Type'] and relation['Type'] not in filter_types:
                     continue
 
                 # filter by relation senses
-                if filter_senses:
+                if filter_senses and relation['Sense']:
                     relation['Sense'] = list(set(relation['Sense']).intersection(set(filter_senses)))
                     if not relation['Sense']:
                         continue
@@ -176,18 +176,19 @@ def test_raws():
 def test_relations():
     dataset_dir = "./conll16st-en-trial"
     t_rel0 = {
-        "Arg1": {"CharacterSpanList": [[2493, 2517]], "RawText": "and told them to cool it", "TokenList": [[2493, 2496, 465, 15, 8], [2497, 2501, 466, 15, 9], [2502, 2506, 467, 15, 10], [2507, 2509, 468, 15, 11], [2510, 2514, 469, 15, 12], [2515, 2517, 470, 15, 13]]},
-        "Arg2": {"CharacterSpanList": [[2526, 2552]], "RawText": "they're ruining the market", "TokenList": [[2526, 2530, 472, 15, 15], [2530, 2533, 473, 15, 16], [2534, 2541, 474, 15, 17], [2542, 2545, 475, 15, 18], [2546, 2552, 476, 15, 19]]},
-        "Connective": {"CharacterSpanList": [[2518, 2525]], "RawText": "because", "TokenList": [[2518, 2525, 471, 15, 14]]},
-        "Punctuation": {"CharacterSpanList": [], "PunctuationType": "", "RawText": "", "TokenList": []},
-        "DocID": "wsj_1000",
-        "ID": 14887,
-        "Sense": ["Contingency.Cause.Reason"],
-        "Type": "Explicit",
+        'Arg1': {'CharacterSpanList': [[4564, 4610]], 'RawText': 'this prompts others to consider the same thing', 'TokenList': [[4564, 4568, 879, 32, 2], [4569, 4576, 880, 32, 3], [4577, 4583, 881, 32, 4], [4584, 4586, 882, 32, 5], [4587, 4595, 883, 32, 6], [4596, 4599, 884, 32, 7], [4600, 4604, 885, 32, 8], [4605, 4610, 886, 32, 9]]},
+        'Arg2': {'CharacterSpanList': [[4557, 4560], [4617, 4650]], 'RawText': 'But it may become much more important', 'TokenList': [[4557, 4560, 877, 32, 0], [4617, 4619, 889, 32, 12], [4620, 4623, 890, 32, 13], [4624, 4630, 891, 32, 14], [4631, 4635, 892, 32, 15], [4636, 4640, 893, 32, 16], [4641, 4650, 894, 32, 17]]},
+        'Connective': {'CharacterSpanList': [[4561, 4563], [4612, 4616]], 'RawText': 'if then', 'TokenList': [[4561, 4563, 878, 32, 1], [4612, 4616, 888, 32, 11]]},
+        'Punctuation': {'CharacterSpanList': [], 'RawText': '', 'TokenList': [], 'PunctuationType': ''},
+        'DocID': 'wsj_1000',
+        'ID': 14905,
+        'Sense': ['Contingency.Condition'],
+        'Type': 'Explicit',
     }
 
     relations = load_relations_gold(dataset_dir)
     rel0 = relations[t_rel0['ID']]
+    print rel0
     for span in ['Arg1', 'Arg2', 'Connective', 'Punctuation']:
         for k in ['CharacterSpanList', 'RawText', 'TokenList']:
             assert rel0[span][k] == t_rel0[span][k], (span, k)
@@ -198,7 +199,8 @@ def test_relations_filtered():
     doc_id = "wsj_1000"
     filter_types = ["Implicit"]
     filter_senses = ["Comparison.Contrast"]
-    t_rel0 = {
+    t_rel0_fail_id = 14905  # is Explicit:Contingency.Condition
+    t_rel1 = {
         'Arg1': {'CharacterSpanList': [[2447, 2552]], 'RawText': u"We've talked to proponents of index arbitrage and told them to cool it because they're ruining the market", 'TokenList': [[2447, 2449, 457, 15, 0], [2449, 2452, 458, 15, 1], [2453, 2459, 459, 15, 2], [2460, 2462, 460, 15, 3], [2463, 2473, 461, 15, 4], [2474, 2476, 462, 15, 5], [2477, 2482, 463, 15, 6], [2483, 2492, 464, 15, 7], [2493, 2496, 465, 15, 8], [2497, 2501, 466, 15, 9], [2502, 2506, 467, 15, 10], [2507, 2509, 468, 15, 11], [2510, 2514, 469, 15, 12], [2515, 2517, 470, 15, 13], [2518, 2525, 471, 15, 14], [2526, 2530, 472, 15, 15], [2530, 2533, 473, 15, 16], [2534, 2541, 474, 15, 17], [2542, 2545, 475, 15, 18], [2546, 2552, 476, 15, 19]]},
         'Arg2': {'CharacterSpanList': [[2554, 2573]], 'RawText': 'They said, `Too bad', 'TokenList': [[2554, 2558, 478, 16, 0], [2559, 2563, 479, 16, 1], [2563, 2564, 480, 16, 2], [2565, 2566, 481, 16, 3], [2566, 2569, 482, 16, 4], [2570, 2573, 483, 16, 5]]},
         'Connective': {'CharacterSpanList': [], 'RawText': 'but', 'TokenList': []},
@@ -208,13 +210,25 @@ def test_relations_filtered():
         'Sense': ['Comparison.Contrast'],
         'Type': 'Implicit',
     }
+    t_rel2 = t_rel1.copy()
+    t_rel2['Sense'] = []
+    t_rel2['Type'] = ""
 
-    relations = load_relations_gold(dataset_dir, doc_ids=[doc_id], filter_types=filter_types, filter_senses=filter_senses)
-    rel0 = relations[t_rel0['ID']]
+    relations = load_relations_gold(dataset_dir, with_senses=True, doc_ids=[doc_id], filter_types=filter_types, filter_senses=filter_senses)
+    assert t_rel0_fail_id not in relations
+    rel1 = relations[t_rel1['ID']]
     for span in ['Arg1', 'Arg2', 'Connective', 'Punctuation']:
         for k in ['CharacterSpanList', 'RawText', 'TokenList']:
-            assert rel0[span][k] == t_rel0[span][k], (span, k)
-    assert rel0['Punctuation']['PunctuationType'] == t_rel0['Punctuation']['PunctuationType']
+            assert rel1[span][k] == t_rel1[span][k], (span, k)
+    assert rel1['Punctuation']['PunctuationType'] == t_rel1['Punctuation']['PunctuationType']
+
+    relationsnos = load_relations_gold(dataset_dir, with_senses=False, doc_ids=[doc_id], filter_types=filter_types, filter_senses=filter_senses)
+    assert t_rel0_fail_id not in relations
+    rel2 = relationsnos[t_rel2['ID']]
+    for span in ['Arg1', 'Arg2', 'Connective', 'Punctuation']:
+        for k in ['CharacterSpanList', 'RawText', 'TokenList']:
+            assert rel2[span][k] == t_rel2[span][k], (span, k)
+    assert rel2['Punctuation']['PunctuationType'] == t_rel2['Punctuation']['PunctuationType']
 
 if __name__ == '__main__':
     import pytest
