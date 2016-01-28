@@ -71,7 +71,7 @@ def get_relations(relations_gold):
     return relations
 
 
-def get_relation_types(relations_gold):
+def get_relation_types(relations_gold, filter_types=None):
     """Extract discourse relation types by relation id from CoNLL16st corpus.
 
         relation_types[14887] = 'Explicit'
@@ -79,19 +79,25 @@ def get_relation_types(relations_gold):
 
     relation_types = {}
     for rel_id, gold in relations_gold.iteritems():
-        relation_types[rel_id] = gold['Type']
+        rel_type = gold['Type']
+        if filter_types and rel_type not in filter_types:
+            continue
+        relation_types[rel_id] = rel_type
     return relation_types
 
 
-def get_relation_senses(relations_gold):
+def get_relation_senses(relations_gold, filter_senses=None):
     """Extract discourse relation senses by relation id from CoNLL16st corpus.
 
-        relation_senses[14887] = ['Contingency.Cause.Reason']
+        relation_senses[14887] = 'Contingency.Cause.Reason'
     """
 
     relation_senses = {}
     for rel_id, gold in relations_gold.iteritems():
-        relation_senses[rel_id] = gold['Sense']
+        rel_sense = gold['Sense'][0]  # only first sense
+        if filter_senses and rel_sense not in filter_senses:
+            continue
+        relation_senses[rel_id] = rel_sense
     return relation_senses
 
 
@@ -112,7 +118,7 @@ def add_relation_tags(word_metas, relation_types, relation_senses):
                     continue  # skip missing relations
 
                 rel_type = relation_types[rel_id]
-                rel_sense = relation_senses[rel_id][0]  # only first sense
+                rel_sense = relation_senses[rel_id]
 
                 # save to metadata
                 rel_tag = ":".join([rel_type, rel_sense, str(rel_id), rel_span])
@@ -158,7 +164,7 @@ def test_relation_types():
 def test_relation_senses():
     dataset_dir = "./conll16st-en-trial"
     t_rel0_id = 14887
-    t_rel0 = ['Contingency.Cause.Reason']
+    t_rel0 = 'Contingency.Cause.Reason'
 
     relations_gold = load_relations_gold(dataset_dir)
     relation_senses = get_relation_senses(relations_gold)

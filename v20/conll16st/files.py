@@ -110,9 +110,11 @@ def load_relations_gold(dataset_dir, doc_ids=None, with_senses=True, filter_type
                 if filter_types and relation['Type'] not in filter_types:
                     continue
 
-                # filter by relation sense
-                if filter_senses and relation['Sense'] not in filter_senses:
-                    continue
+                # filter by relation senses
+                if filter_senses:
+                    relation['Sense'] = list(set(relation['Sense']).intersection(set(filter_senses)))
+                    if not relation['Sense']:
+                        continue
 
                 # fix inconsistent structure
                 if 'TokenList' not in relation['Arg1']:
@@ -181,10 +183,33 @@ def test_relations():
         "DocID": "wsj_1000",
         "ID": 14887,
         "Sense": ["Contingency.Cause.Reason"],
-        "Type": "Explicit"
+        "Type": "Explicit",
     }
 
     relations = load_relations_gold(dataset_dir)
+    rel0 = relations[t_rel0['ID']]
+    for span in ['Arg1', 'Arg2', 'Connective', 'Punctuation']:
+        for k in ['CharacterSpanList', 'RawText', 'TokenList']:
+            assert rel0[span][k] == t_rel0[span][k], (span, k)
+    assert rel0['Punctuation']['PunctuationType'] == t_rel0['Punctuation']['PunctuationType']
+
+def test_relations_filtered():
+    dataset_dir = "./conll16st-en-trial"
+    doc_id = "wsj_1000"
+    filter_types = ["Implicit"]
+    filter_senses = ["Comparison.Contrast"]
+    t_rel0 = {
+        'Arg1': {'CharacterSpanList': [[2447, 2552]], 'RawText': u"We've talked to proponents of index arbitrage and told them to cool it because they're ruining the market", 'TokenList': [[2447, 2449, 457, 15, 0], [2449, 2452, 458, 15, 1], [2453, 2459, 459, 15, 2], [2460, 2462, 460, 15, 3], [2463, 2473, 461, 15, 4], [2474, 2476, 462, 15, 5], [2477, 2482, 463, 15, 6], [2483, 2492, 464, 15, 7], [2493, 2496, 465, 15, 8], [2497, 2501, 466, 15, 9], [2502, 2506, 467, 15, 10], [2507, 2509, 468, 15, 11], [2510, 2514, 469, 15, 12], [2515, 2517, 470, 15, 13], [2518, 2525, 471, 15, 14], [2526, 2530, 472, 15, 15], [2530, 2533, 473, 15, 16], [2534, 2541, 474, 15, 17], [2542, 2545, 475, 15, 18], [2546, 2552, 476, 15, 19]]},
+        'Arg2': {'CharacterSpanList': [[2554, 2573]], 'RawText': 'They said, `Too bad', 'TokenList': [[2554, 2558, 478, 16, 0], [2559, 2563, 479, 16, 1], [2563, 2564, 480, 16, 2], [2565, 2566, 481, 16, 3], [2566, 2569, 482, 16, 4], [2570, 2573, 483, 16, 5]]},
+        'Connective': {'CharacterSpanList': [], 'RawText': 'but', 'TokenList': []},
+        'Punctuation': {'CharacterSpanList': [], 'RawText': '', 'TokenList': [], 'PunctuationType': ''},
+        'DocID': 'wsj_1000',
+        'ID': 14888,
+        'Sense': ['Comparison.Contrast'],
+        'Type': 'Implicit',
+    }
+
+    relations = load_relations_gold(dataset_dir, doc_ids=[doc_id], filter_types=filter_types, filter_senses=filter_senses)
     rel0 = relations[t_rel0['ID']]
     for span in ['Arg1', 'Arg2', 'Connective', 'Punctuation']:
         for k in ['CharacterSpanList', 'RawText', 'TokenList']:
