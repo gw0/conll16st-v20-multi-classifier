@@ -11,6 +11,20 @@ from files import load_parses, load_raws, load_relations_gold
 from words import get_word_metas
 
 
+def rtsip_to_tag(rel_type, rel_sense, rel_id, rel_part):
+    """Convert relation type, sense, id, and part to tag."""
+
+    rel_tag = ":".join([rel_type, rel_sense, str(rel_id), rel_part])
+    return rel_tag
+
+
+def tag_to_rtsip(tag):
+    """Convert tag to relation type, sense, id, and part."""
+
+    rel_type, rel_sense, rel_id, rel_part = tag.split(":")
+    return rel_type, rel_sense, int(rel_id), rel_part
+
+
 def get_rel_parts(relations_gold):
     """Extract only discourse relation parts/spans of token ids by relation id from CoNLL16st corpus.
 
@@ -44,13 +58,13 @@ def get_rel_parts(relations_gold):
         punct_list = [ t[2]  for t in gold['Punctuation']['TokenList'] ]
         all_list = sum([arg1_list, arg2_list, conn_list, punct_list], [])
 
-        # character lengths of spans
+        # character lengths of parts
         arg1_len = sum([ (e - b)  for b, e in gold['Arg1']['CharacterSpanList'] ])
         arg2_len = sum([ (e - b)  for b, e in gold['Arg2']['CharacterSpanList'] ])
         conn_len = sum([ (e - b)  for b, e in gold['Connective']['CharacterSpanList'] ])
         punct_len = sum([ (e - b)  for b, e in gold['Punctuation']['CharacterSpanList'] ])
 
-        # save relation span
+        # save relation parts
         rel = {
             'Arg1': arg1_list,
             'Arg1Len': arg1_len,
@@ -113,7 +127,7 @@ def add_relation_tags(word_metas, rel_types, rel_senses):
     for doc_id in word_metas:
         for meta in word_metas[doc_id]:
             meta['RelationTags'] = []
-            for rel_id, rel_span in zip(meta['RelationIDs'], meta['RelationSpans']):
+            for rel_id, rel_part in zip(meta['RelationIDs'], meta['RelationParts']):
                 if rel_id not in rel_types or rel_id not in rel_senses:
                     continue  # skip missing relations
 
@@ -121,8 +135,7 @@ def add_relation_tags(word_metas, rel_types, rel_senses):
                 rel_sense = rel_senses[rel_id]
 
                 # save to metadata
-                rel_tag = ":".join([rel_type, rel_sense, str(rel_id), rel_span])
-                meta['RelationTags'].append(rel_tag)
+                meta['RelationTags'].append(rtsip_to_tag(rel_type, rel_sense, rel_id, rel_part))
 
 
 ### Tests
