@@ -59,8 +59,15 @@ def load_raws(dataset_dir, doc_ids, raw_ffmts=None):
         raws[doc_id] = None
         for raw_ffmt in raw_ffmts:
             try:
+                # open using utf8 encoding
                 f = codecs.open(raw_ffmt.format(dataset_dir, doc_id), 'r', encoding='utf8')
-                raws[doc_id] = f.read()
+                try:
+                    raws[doc_id] = f.read()
+                except UnicodeDecodeError:
+                    f.close()
+                    # fallback to binary reading
+                    f = open(raw_ffmt.format(dataset_dir, doc_id), 'r')
+                    raws[doc_id] = f.read()
                 f.close()
                 break  # skip other filenames
             except IOError:
