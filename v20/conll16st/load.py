@@ -39,8 +39,9 @@ def load_all(dataset_dir, doc_ids=None, filter_types=None, filter_senses=None):
     rel_parts = get_rel_parts(relationsnos_gold)
     rel_types = get_rel_types(relations_gold)
     rel_senses = get_rel_senses(relations_gold)
+    rel_ids = rel_parts.keys()
 
     # add extra fields
     add_relation_tags(word_metas, rel_types, rel_senses)
 
-    return doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_parts, rel_types, rel_senses, relations_gold
+    return doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, relations_gold
