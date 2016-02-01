@@ -67,6 +67,26 @@ def encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_weights, 
     return x
 
 
+def decode_x_rel_senses(x_rel_senses, token_range, relation, rel_senses2id, rel_senses2id_weights, rel_senses2id_size):
+    """Decode one discourse relation sense for a given relation spans."""
+
+    # sum sense predictions for relation tokens
+    totals = np.zeros((rel_senses2id_size,))
+    for i, token_id in enumerate(token_range):
+        if token_id in relation['Arg1'] or token_id in relation['Arg2'] or token_id in relation['Connective'] or token_id in relation['Punctuation']:
+            totals += x_rel_senses[i] / np.max(x_rel_senses[i])
+
+    # return most probable sense
+    rel_sense = None
+    max_total = 0.
+    for t, j in rel_senses2id.items():
+        if totals[j] > max_total:
+            max_total = totals[j]
+            rel_sense = t
+    return rel_sense
+
+
+
 ### Tests
 
 def test_build_rel_senses2id():
@@ -110,6 +130,55 @@ def test_encode_x_rel_senses():
 
     x_1 = encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_weights, rel_senses2id_size, max_len_1)
     assert (x_1 == t_x_1).all()
+
+def test_decode_x_rel_types():
+    rel_senses2id = {None: 0, "": 1, "Comparison.Contrast": 2, "Comparison.Concession": 3, "Contingency.Condition": 4}
+    rel_senses2id_weights = dict([ (k, 1.) for k in rel_senses2id ])
+    rel_senses2id_size = len(rel_senses2id)
+    relation = {
+        'Arg1': [854],
+        'Arg1Len': 1,
+        'Arg2': [859, 860],
+        'Arg2Len': 2,
+        'Connective': [],
+        'ConnectiveLen': 0,
+        'Punctuation': [],
+        'PunctuationLen': 0,
+        'PunctuationType': '',
+        'DocID': 'wsj_1000',
+        'ID': 14903,
+        'TokenMin': 854,
+        'TokenMax': 861,
+        'TokenCount': 3,
+    }
+    token_start = 854
+    token_end = 861
+    x_rel_senses_0 = [
+        [0., 0., 1., 0., 0.],
+        [1., 0., 0., 0., 0.],
+        [1., 0., 0., 0., 0.],
+        [1., 0., 0., 0., 0.],
+        [1., 0., 0., 0., 0.],
+        [0., 0., 0.5, 0.5, 0.],
+        [0., 0., 0.5, 0.5, 0.],
+    ]
+    t_sense_0 = 'Comparison.Contrast'
+    x_rel_senses_1 = [
+        [0., 0.25, 0., 0.75, 0.],
+        [0., 0., 1., 0., 0.],
+        [0., 0., 0., 0., 1.],
+        [0., 0., 0., 1., 0.],
+        [1., 0., 0., 0., 0.],
+        [0., 0.5, 0., 0.5, 0.],
+        [0., 0., 0., 0.5, 0.5],
+    ]
+    t_sense_1 = 'Comparison.Concession'
+
+    sense_0 = decode_x_rel_senses(x_rel_senses_0, range(token_start, token_end), relation, rel_senses2id, rel_senses2id_weights, rel_senses2id_size)
+    assert sense_0 == t_sense_0
+
+    sense_1 = decode_x_rel_senses(x_rel_senses_1, range(token_start, token_end), relation, rel_senses2id, rel_senses2id_weights, rel_senses2id_size)
+    assert sense_1 == t_sense_1
 
 if __name__ == '__main__':
     import pytest
