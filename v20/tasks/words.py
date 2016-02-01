@@ -18,7 +18,7 @@ def build_words2id(words, max_size=None, min_count=1, words2id=None):
     return build_index(words, max_size=max_size, min_count=min_count, index=words2id)
 
 
-### Encode
+### Encode data
 
 def encode_x_words(words_slice, words2id, words2id_weights, words2id_size, max_len):
     """Encode words as word ids with masked post-padding (sample, time_pad)."""

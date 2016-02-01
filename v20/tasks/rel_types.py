@@ -10,12 +10,21 @@ __license__ = "GPLv3+"
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import numpy as np
+from keras.layers.core import Activation, TimeDistributedDense
 
 from common import build_index
 from conll16st.relations import tag_to_rtsip
 
 
 ### Model
+
+def rel_types_model(model, ins, max_len, embedding_dim, rel_types2id_size, pre='rtypes'):
+    """Discourse relation types model as Keras Graph."""
+
+    # Discourse relation types dense neural network (sample, time_pad, rel_types2id)
+    model.add_node(TimeDistributedDense(rel_types2id_size, init='he_uniform'), name=pre + '_dense', input=ins[0])
+    model.add_node(Activation('softmax'), name=pre + '_softmax', input=pre + '_dense')
+    return pre + '_softmax'
 
 
 ### Build index
@@ -26,7 +35,7 @@ def build_rel_types2id(rel_types, max_size=None, min_count=1, rel_types2id=None)
     return build_index(rel_types, max_size=max_size, min_count=min_count, index=rel_types2id)
 
 
-### Encode
+### Encode data
 
 def encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_weights, rel_types2id_size, max_len, oov_key=""):
     """Encode discourse relation types as normalized vectors (sample, time_pad, rel_types2id)."""

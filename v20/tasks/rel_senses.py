@@ -4,18 +4,27 @@
 """
 Discourse relation senses model/task.
 """
-__author__ = "GW [http://gw.tnode.com/] <gw.2015@tnode.com>"
+__author__ = "GW [http://gw.tnode.com/] <gw.2016@tnode.com>"
 __license__ = "GPLv3+"
 
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import numpy as np
+from keras.layers.core import Activation, TimeDistributedDense
 
 from common import build_index
 from conll16st.relations import tag_to_rtsip
 
 
 ### Model
+
+def rel_senses_model(model, ins, max_len, embedding_dim, rel_senses2id_size, pre='rsenses'):
+    """Discourse relation senses model as Keras Graph."""
+
+    # Discourse relation senses dense neural network (sample, time_pad, rel_senses2id)
+    model.add_node(TimeDistributedDense(rel_senses2id_size, init='he_uniform'), name=pre + '_dense', input=ins[0])
+    model.add_node(Activation('softmax'), name=pre + '_softmax', input=pre + '_dense')
+    return pre + '_softmax'
 
 
 ### Build index
@@ -26,7 +35,7 @@ def build_rel_senses2id(rel_senses, max_size=None, min_count=1, pos_tags2id=None
     return build_index(rel_senses, max_size=max_size, min_count=min_count, index=pos_tags2id)
 
 
-### Encode
+### Encode data
 
 def encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_weights, rel_senses2id_size, max_len, oov_key=""):
     """Encode discourse relation senses as normalized vectors (sample, time_pad, rel_senses2id)."""

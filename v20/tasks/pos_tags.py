@@ -14,10 +14,10 @@ from common import build_index, map_sequence, onehot_sequence, pad_sequence
 
 ### Model
 
-def pos_tags_model(model, ins, max_len, embedding_dim, pos_tags2id_size, pre='pos'):
+def pos_tags_model(model, ins, max_len, embedding_dim, pos_tags2id_size, pre='pos_tags'):
     """POS tagging model as Keras Graph."""
 
-    # POS tag dense neural network (doc, time_pad, pos_tags2id)
+    # POS tag dense neural network (sample, time_pad, pos_tags2id)
     model.add_node(TimeDistributedDense(pos_tags2id_size, init='he_uniform'), name=pre + '_dense', input=ins[0])
     model.add_node(Activation('softmax'), name=pre + '_softmax', input=pre + '_dense')
     return pre + '_softmax'
@@ -31,7 +31,7 @@ def build_pos_tags2id(pos_tags, max_size=None, min_count=1, pos_tags2id=None):
     return build_index(pos_tags, max_size=max_size, min_count=min_count, index=pos_tags2id)
 
 
-### Encode
+### Encode data
 
 def encode_x_pos_tags(pos_tags_slice, pos_tags2id, pos_tags2id_weights, pos_tags2id_size, max_len):
     """Encode POS tags as one-hot vectors (sample, time_pad, pos_tags2id)."""
