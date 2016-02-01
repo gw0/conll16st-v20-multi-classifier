@@ -31,7 +31,7 @@ def build_model(max_len, embedding_dim, words2id_size, pos_tags2id_size, rel_typ
         #'x_skipgram': 'mse',
         #'x_pos_tags': 'binary_crossentropy',
         'x_rel_types': 'binary_crossentropy',
-        #'x_rel_senses': 'binary_crossentropy',
+        'x_rel_senses': 'binary_crossentropy',
     }
 
     # input: word ids with masked post-padding (doc, time_pad)
@@ -147,7 +147,7 @@ def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, 
                 #'x_skipgram': np.asarray(x_skipgram, dtype=np.float32),
                 #'x_pos_tags': np.asarray(x_pos_tags, dtype=np.float32),
                 'x_rel_types': np.asarray(x_rel_types, dtype=np.float32),
-                #'x_rel_senses': np.asarray(x_rel_senses, dtype=np.float32),
+                'x_rel_senses': np.asarray(x_rel_senses, dtype=np.float32),
             }
 
 
