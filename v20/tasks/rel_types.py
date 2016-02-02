@@ -10,34 +10,41 @@ __license__ = "GPLv3+"
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import numpy as np
-from keras.layers.core import Activation, TimeDistributedDense
+from keras.layers.core import Activation, TimeDistributedDense, RepeatVector, Permute
 
 from common import build_index
-from conll16st.relations import tag_to_rtsip
+from conll16st.relations import tag_to_rtsip, filter_tags
 
 
 ### Model
 
-def rel_types_model(model, ins, max_len, embedding_dim, rel_types2id_size, pre='rtypes'):
+def rel_types_model(model, ins, max_len, embedding_dim, rel_types2id_size, focus, pre='rtypes'):
     """Discourse relation types model as Keras Graph."""
 
-    # Discourse relation types dense neural network (sample, time_pad, rel_types2id)
+    # prepare focus dimensionality
+    model.add_node(RepeatVector(rel_types2id_size), name=pre + '_focus_rep', input=focus)
+    model.add_node(Permute((2, 1)), name=pre + '_focus', input=pre + '_focus_rep')
+
+    # discourse relation types dense neural network (sample, time_pad, rel_types2id)
     model.add_node(TimeDistributedDense(rel_types2id_size, init='he_uniform'), name=pre + '_dense', input=ins[0])
     model.add_node(Activation('softmax'), name=pre + '_softmax', input=pre + '_dense')
-    return pre + '_softmax'
+
+    # multiplication to focus the activations (doc, time_pad, rel_types2id)
+    model.add_node(Activation('linear'), name=pre + '_out', inputs=[pre + '_softmax', pre + '_focus'], merge_mode='mul')
+    return pre + '_out'
 
 
 ### Build index
 
 def build_rel_types2id(rel_types, max_size=None, min_count=1, rel_types2id=None):
-    """Build vocabulary index for all discourse relation types (reserved ids: 0 = padding, 1 = out-of-vocabulary)."""
+    """Build vocabulary index for all discourse relation types (reserved ids: 0 = missing, 1 = out-of-vocabulary)."""
 
     return build_index(rel_types, max_size=max_size, min_count=min_count, index=rel_types2id)
 
 
 ### Encode data
 
-def encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_size, max_len, oov_key=""):
+def encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_size, max_len, filter_prefixes=None, oov_key=""):
     """Encode discourse relation types as normalized vectors (sample, time_pad, rel_types2id)."""
 
     # crop sequence if needed
@@ -49,7 +56,8 @@ def encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_size, max_le
     for i in range(max_len):
         if i < len(word_metas_slice):
             # mark all relation types
-            for rel_tag in word_metas_slice[i]['RelationTags']:
+            tags = filter_tags(word_metas_slice[i]['RelationTags'], filter_prefixes)
+            for rel_tag in tags:
                 rel_type, _, _, _ = tag_to_rtsip(rel_tag)
 
                 try:
@@ -57,14 +65,15 @@ def encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_size, max_le
                 except KeyError:  # missing in vocabulary
                     x[i, rel_types2id[oov_key]] += 1.
 
-        if i >= len(word_metas_slice) or not word_metas_slice[i]['RelationTags']:
+        if i >= len(word_metas_slice) or not filter_tags(word_metas_slice[i]['RelationTags'], filter_prefixes):
             # no relation types present
             x[i, rel_types2id[None]] += 1.
 
     # normalize by rows to [0,1] interval
     x_sum = np.sum(x, axis=1)
-    x = (x.T / x_sum).T
-    return x
+    x2 = (x.T / x_sum).T
+    x2[x_sum == 0.] = x[x_sum == 0.]  # prevent NaN
+    return x2
 
 
 def decode_x_rel_types(x_rel_types, token_range, relation, rel_types2id, rel_types2id_size):
@@ -74,16 +83,17 @@ def decode_x_rel_types(x_rel_types, token_range, relation, rel_types2id, rel_typ
     totals = np.zeros((rel_types2id_size,))
     for i, token_id in enumerate(token_range):
         if token_id in relation['Arg1'] or token_id in relation['Arg2'] or token_id in relation['Connective'] or token_id in relation['Punctuation']:
-            totals += x_rel_types[i] / np.max(x_rel_types[i])
+            totals += x_rel_types[i]
+            #XXX: / np.max(x_rel_types[i])
 
     # return most probable type
     rel_type = None
-    max_total = 0.
+    max_total = -1.
     for t, j in rel_types2id.items():
         if totals[j] > max_total:
             max_total = totals[j]
             rel_type = t
-    return rel_type
+    return rel_type, totals
 
 
 ### Tests
