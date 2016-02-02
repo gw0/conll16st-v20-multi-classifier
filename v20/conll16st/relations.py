@@ -25,24 +25,33 @@ def tag_to_rtsip(tag):
     return rel_type, rel_sense, int(rel_id), rel_part
 
 
+def filter_tags(tags, prefixes=None):
+    """Filter list of relation tags matching specified prefixes."""
+
+    if prefixes is not None:
+        # filter by specified relation tag prefixes
+        tags = [ t  for t in tags if any([ t.startswith(p)  for p in prefixes ]) ]
+    return tags
+
+
 def get_rel_parts(relations_gold):
     """Extract only discourse relation parts/spans of token ids by relation id from CoNLL16st corpus.
 
-        relations[14887] = {
-            'Arg1': [465, 466, 467, 468, 469, 470],
-            'Arg1Len': 24,
-            'Arg2': [472, 473, 474, 475, 476],
-            'Arg2Len': 26,
-            'Connective': [471],
-            'ConnectiveLen': 7,
+        rel_parts[14905] = {
+            'Arg1': [879, 880, 881, 882, 883, 884, 885, 886],
+            'Arg1Len': 46,
+            'Arg2': [877, 889, 890, 891, 892, 893, 894],
+            'Arg2Len': 36,
+            'Connective': [878, 888],
+            'ConnectiveLen': 6,
             'Punctuation': [],
             'PunctuationLen': 0,
-            'PunctuationType': "",
-            'DocID': "wsj_1000",
-            'ID': 14887,
-            'TokenMin': 465,
-            'TokenMax': 476,
-            'TokenCount': 12,
+            'PunctuationType': '',
+            'DocID': 'wsj_1000',
+            'ID': 14905,
+            'TokenMin': 877,
+            'TokenMax': 894,
+            'TokenCount': 17,
         }
     """
 

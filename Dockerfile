@@ -1,9 +1,10 @@
 # Discourse relation sense classification (CoNLL16st).
 #
 # Example:
-#   NAME=conll16st-v20-01-train
+#   NAME=conll16st-v20-01
 #   docker build -t $NAME .
-#   docker run -d -v /srv/storage/conll16st:/srv/ex --name $NAME $NAME ex/$NAME conll16st-en-train conll16st-en-dev conll16st-en-dev ex/$NAME
+#   docker run -d -v /srv/storage/conll16st:/srv/ex --name $NAME-train $NAME ex/$NAME-train conll16st-en-train conll16st-en-dev conll16st-en-dev ex/$NAME-train
+#   docker logs -f $NAME-train
 #
 # Author: GW [http://gw.tnode.com/] <gw.2016@tnode.com>
 
