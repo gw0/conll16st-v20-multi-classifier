@@ -127,7 +127,7 @@ def relation_sample(rel_id, word_crop, max_len, doc_ids, words, word_metas, pos_
 def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
     """Batch generator where each sample represents a different discourse relation."""
 
-    rel_ids = rel_ids[:]
+    rel_ids = list(rel_ids)  # copy list
     while True:
         # shuffle relations on each epoch
         random.shuffle(rel_ids)

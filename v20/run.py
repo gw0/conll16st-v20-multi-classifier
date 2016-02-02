@@ -94,13 +94,19 @@ if not train_doc_ids:
     raise IOError("Failed to load dataset!")
 
 log.info("load dataset for validation ({})".format(args.valid_dir))
-valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold = load_all(args.valid_dir, filter_types=filter_types, filter_senses=filter_senses)
+if args.valid_dir == args.train_dir:
+    valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold = train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, train_relations_gold
+else:
+    valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold = load_all(args.valid_dir, filter_types=filter_types, filter_senses=filter_senses)
 log.info("  doc_ids: {}, words: {}, rel_ids: {}, relation tokens: {}".format(len(valid_doc_ids), sum([ len(s) for s in valid_words.itervalues() ]), len(valid_rel_ids), sum([ valid_rel_parts[rel_id]['TokenCount'] for rel_id in valid_rel_parts ])))
 if not valid_doc_ids:
     raise IOError("Failed to load dataset!")
 
 log.info("load dataset for testing ({})".format(args.test_dir))
-test_doc_ids, test_words, test_word_metas, test_pos_tags, test_dependencies, test_parsetrees, test_rel_ids, test_rel_parts, test_rel_types, test_rel_senses, test_relations_gold = load_all(args.test_dir, filter_types=filter_types, filter_senses=filter_senses)
+if args.test_dir == args.valid_dir:
+    test_doc_ids, test_words, test_word_metas, test_pos_tags, test_dependencies, test_parsetrees, test_rel_ids, test_rel_parts, test_rel_types, test_rel_senses, test_relations_gold = valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold
+else:
+    test_doc_ids, test_words, test_word_metas, test_pos_tags, test_dependencies, test_parsetrees, test_rel_ids, test_rel_parts, test_rel_types, test_rel_senses, test_relations_gold = load_all(args.test_dir, filter_types=filter_types, filter_senses=filter_senses)
 log.info("  doc_ids: {}, words: {}, rel_ids: {}, relation tokens: {}".format(len(test_doc_ids), sum([ len(s) for s in test_words.itervalues() ]), len(test_rel_ids), sum([ test_rel_parts[rel_id]['TokenCount'] for rel_id in test_rel_parts ])))
 if not test_doc_ids:
     raise IOError("Failed to load dataset!")
@@ -162,13 +168,15 @@ class SenseValidation(Callback):
                 #'x_rel_senses': np.asarray([x1_rel_senses], dtype=np.float32),
             })
 
-            rel_type, rel_type_totals = decode_x_rel_types(y['x_rel_types'][0], range(token_start, token_end), valid_rel_parts[rel_id], rel_types2id, rel_types2id_size)
-            if rel_type == valid_rel_types[rel_id]:
-                rel_types_matches += 1
+            if 'x_rel_types' in y:
+                rel_type, rel_type_totals = decode_x_rel_types(y['x_rel_types'][0], range(token_start, token_end), valid_rel_parts[rel_id], rel_types2id, rel_types2id_size)
+                if rel_type == valid_rel_types[rel_id]:
+                    rel_types_matches += 1
 
-            rel_sense, rel_sense_totals = decode_x_rel_senses(y['x_rel_senses'][0], range(token_start, token_end), valid_rel_parts[rel_id], rel_senses2id, rel_senses2id_size)
-            if rel_sense == valid_rel_senses[rel_id]:
-                rel_senses_matches += 1
+            if 'x_rel_senses' in y:
+                rel_sense, rel_sense_totals = decode_x_rel_senses(y['x_rel_senses'][0], range(token_start, token_end), valid_rel_parts[rel_id], rel_senses2id, rel_senses2id_size)
+                if rel_sense == valid_rel_senses[rel_id]:
+                    rel_senses_matches += 1
 
             #if valid_rel_types[rel_id] != rel_type:
             #    print rel_id, valid_rel_types[rel_id], rel_type, rel_type_totals

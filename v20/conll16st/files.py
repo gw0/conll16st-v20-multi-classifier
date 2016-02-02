@@ -75,7 +75,7 @@ def load_raws(dataset_dir, doc_ids, raw_ffmts=None):
     return raws
 
 
-def load_relations_gold(dataset_dir, with_senses=True, doc_ids=None, filter_types=None, filter_senses=None, relations_ffmts=None):
+def load_relations_gold(dataset_dir, with_senses=True, with_rawtext=False, doc_ids=None, filter_types=None, filter_senses=None, relations_ffmts=None):
     """Load shallow discourse relations untouched by relation id from CoNLL16st corpus.
 
         relations[14905] = {
@@ -137,10 +137,17 @@ def load_relations_gold(dataset_dir, with_senses=True, doc_ids=None, filter_type
                 if 'TokenList' not in relation['Punctuation']:
                     relation['Punctuation']['TokenList'] = []
 
-                # remove sense information
+                # remove type and sense information
                 if not with_senses:
                     relation['Sense'] = []
                     relation['Type'] = ""
+
+                # remove raw text fields
+                if not with_rawtext:
+                    relation['Arg1']['RawText'] = None
+                    relation['Arg2']['RawText'] = None
+                    relation['Connective']['RawText'] = None
+                    relation['Punctuation']['RawText'] = None
 
                 # save relation
                 relations[relation['ID']] = relation
@@ -149,6 +156,22 @@ def load_relations_gold(dataset_dir, with_senses=True, doc_ids=None, filter_type
         except IOError:
             pass
     return relations
+
+
+def strip_relations_gold(relations):
+    """Strip type and sense information from shallow discourse relations from CoNLL16st corpus."""
+
+    relationsnos = {}
+    for rel_id, relation in relations.iteritems():
+        relation = dict(relation)  # copy dict
+
+        # remove type and sense information
+        relation['Sense'] = []
+        relation['Type'] = ""
+
+        # save relation
+        relationsnos[rel_id] = relation
+    return relationsnos
 
 
 ### Tests
@@ -192,14 +215,25 @@ def test_relations():
         'Sense': ['Contingency.Condition'],
         'Type': 'Explicit',
     }
+    t_rel1 = dict(t_rel0)
+    t_rel1['Sense'] = []
+    t_rel1['Type'] = ""
 
-    relations = load_relations_gold(dataset_dir)
+    relations = load_relations_gold(dataset_dir, with_senses=True, with_rawtext=True)
     rel0 = relations[t_rel0['ID']]
-    print rel0
     for span in ['Arg1', 'Arg2', 'Connective', 'Punctuation']:
         for k in ['CharacterSpanList', 'RawText', 'TokenList']:
             assert rel0[span][k] == t_rel0[span][k], (span, k)
     assert rel0['Punctuation']['PunctuationType'] == t_rel0['Punctuation']['PunctuationType']
+    assert rel0 == t_rel0
+
+    relationsnos = strip_relations_gold(relations)
+    rel1 = relationsnos[t_rel1['ID']]
+    for span in ['Arg1', 'Arg2', 'Connective', 'Punctuation']:
+        for k in ['CharacterSpanList', 'RawText', 'TokenList']:
+            assert rel1[span][k] == t_rel1[span][k], (span, k)
+    assert rel1['Punctuation']['PunctuationType'] == t_rel1['Punctuation']['PunctuationType']
+    assert rel1 == t_rel1
 
 def test_relations_filtered():
     dataset_dir = "./conll16st-en-trial"
@@ -208,10 +242,10 @@ def test_relations_filtered():
     filter_senses = ["Comparison.Contrast"]
     t_rel0_fail_id = 14905  # is Explicit:Contingency.Condition
     t_rel1 = {
-        'Arg1': {'CharacterSpanList': [[2447, 2552]], 'RawText': u"We've talked to proponents of index arbitrage and told them to cool it because they're ruining the market", 'TokenList': [[2447, 2449, 457, 15, 0], [2449, 2452, 458, 15, 1], [2453, 2459, 459, 15, 2], [2460, 2462, 460, 15, 3], [2463, 2473, 461, 15, 4], [2474, 2476, 462, 15, 5], [2477, 2482, 463, 15, 6], [2483, 2492, 464, 15, 7], [2493, 2496, 465, 15, 8], [2497, 2501, 466, 15, 9], [2502, 2506, 467, 15, 10], [2507, 2509, 468, 15, 11], [2510, 2514, 469, 15, 12], [2515, 2517, 470, 15, 13], [2518, 2525, 471, 15, 14], [2526, 2530, 472, 15, 15], [2530, 2533, 473, 15, 16], [2534, 2541, 474, 15, 17], [2542, 2545, 475, 15, 18], [2546, 2552, 476, 15, 19]]},
-        'Arg2': {'CharacterSpanList': [[2554, 2573]], 'RawText': 'They said, `Too bad', 'TokenList': [[2554, 2558, 478, 16, 0], [2559, 2563, 479, 16, 1], [2563, 2564, 480, 16, 2], [2565, 2566, 481, 16, 3], [2566, 2569, 482, 16, 4], [2570, 2573, 483, 16, 5]]},
-        'Connective': {'CharacterSpanList': [], 'RawText': 'but', 'TokenList': []},
-        'Punctuation': {'CharacterSpanList': [], 'RawText': '', 'TokenList': [], 'PunctuationType': ''},
+        'Arg1': {'CharacterSpanList': [[2447, 2552]], 'RawText': None, 'TokenList': [[2447, 2449, 457, 15, 0], [2449, 2452, 458, 15, 1], [2453, 2459, 459, 15, 2], [2460, 2462, 460, 15, 3], [2463, 2473, 461, 15, 4], [2474, 2476, 462, 15, 5], [2477, 2482, 463, 15, 6], [2483, 2492, 464, 15, 7], [2493, 2496, 465, 15, 8], [2497, 2501, 466, 15, 9], [2502, 2506, 467, 15, 10], [2507, 2509, 468, 15, 11], [2510, 2514, 469, 15, 12], [2515, 2517, 470, 15, 13], [2518, 2525, 471, 15, 14], [2526, 2530, 472, 15, 15], [2530, 2533, 473, 15, 16], [2534, 2541, 474, 15, 17], [2542, 2545, 475, 15, 18], [2546, 2552, 476, 15, 19]]},
+        'Arg2': {'CharacterSpanList': [[2554, 2573]], 'RawText': None, 'TokenList': [[2554, 2558, 478, 16, 0], [2559, 2563, 479, 16, 1], [2563, 2564, 480, 16, 2], [2565, 2566, 481, 16, 3], [2566, 2569, 482, 16, 4], [2570, 2573, 483, 16, 5]]},
+        'Connective': {'CharacterSpanList': [], 'RawText': None, 'TokenList': []},
+        'Punctuation': {'CharacterSpanList': [], 'RawText': None, 'TokenList': [], 'PunctuationType': ''},
         'DocID': 'wsj_1000',
         'ID': 14888,
         'Sense': ['Comparison.Contrast'],
@@ -221,13 +255,14 @@ def test_relations_filtered():
     t_rel2['Sense'] = []
     t_rel2['Type'] = ""
 
-    relations = load_relations_gold(dataset_dir, with_senses=True, doc_ids=[doc_id], filter_types=filter_types, filter_senses=filter_senses)
+    relations = load_relations_gold(dataset_dir, with_senses=True, with_rawtext=False, doc_ids=[doc_id], filter_types=filter_types, filter_senses=filter_senses)
     assert t_rel0_fail_id not in relations
     rel1 = relations[t_rel1['ID']]
     for span in ['Arg1', 'Arg2', 'Connective', 'Punctuation']:
         for k in ['CharacterSpanList', 'RawText', 'TokenList']:
             assert rel1[span][k] == t_rel1[span][k], (span, k)
     assert rel1['Punctuation']['PunctuationType'] == t_rel1['Punctuation']['PunctuationType']
+    assert rel1 == t_rel1
 
     relationsnos = load_relations_gold(dataset_dir, with_senses=False, doc_ids=[doc_id], filter_types=filter_types, filter_senses=filter_senses)
     assert t_rel0_fail_id not in relations
@@ -236,6 +271,7 @@ def test_relations_filtered():
         for k in ['CharacterSpanList', 'RawText', 'TokenList']:
             assert rel2[span][k] == t_rel2[span][k], (span, k)
     assert rel2['Punctuation']['PunctuationType'] == t_rel2['Punctuation']['PunctuationType']
+    assert rel2 == t_rel2
 
 if __name__ == '__main__':
     import pytest
