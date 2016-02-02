@@ -81,7 +81,7 @@ def build_model(max_len, embedding_dim, words2id_size, pos_tags2id_size, rel_typ
 
 ### Prepare data
 
-def relation_sample(rel_id, word_crop, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, (words2id, words2id_weights, words2id_size), (pos_tags2id, pos_tags2id_weights, pos_tags2id_size), (rel_types2id, rel_types2id_weights, rel_types2id_size), (rel_senses2id, rel_senses2id_weights, rel_senses2id_size)):
+def relation_sample(rel_id, word_crop, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size):
     doc_id = rel_parts[rel_id]['DocID']
     words_len = len(words[doc_id])
     token_min = rel_parts[rel_id]['TokenMin']
@@ -100,21 +100,21 @@ def relation_sample(rel_id, word_crop, max_len, doc_ids, words, word_metas, pos_
 
     # prepare data
     words_slice = words[doc_id][token_start:token_end]
-    x1_words_pad = encode_x_words(words_slice, words2id, words2id_weights, words2id_size, max_len)
-    x1_words_rand = encode_x_words_rand(words_slice, words2id, words2id_weights, words2id_size, max_len)
+    x1_words_pad = encode_x_words(words_slice, words2id, words2id_size, max_len)
+    x1_words_rand = encode_x_words_rand(words_slice, words2id, words2id_size, max_len)
 
     x1_skipgram = None
 
     pos_tags_slice = pos_tags[doc_id][token_start:token_end]
-    x1_pos_tags = encode_x_pos_tags(pos_tags_slice, pos_tags2id, pos_tags2id_weights, pos_tags2id_size, max_len)
+    x1_pos_tags = encode_x_pos_tags(pos_tags_slice, pos_tags2id, pos_tags2id_size, max_len)
 
     word_metas_slice = word_metas[doc_id][token_start:token_end]
-    x1_rel_types = encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_weights, rel_types2id_size, max_len)
-    x1_rel_senses = encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_weights, rel_senses2id_size, max_len)
+    x1_rel_types = encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_size, max_len)
+    x1_rel_senses = encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_size, max_len)
     return x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, token_start, token_end
 
 
-def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, (words2id, words2id_weights, words2id_size), (pos_tags2id, pos_tags2id_weights, pos_tags2id_size), (rel_types2id, rel_types2id_weights, rel_types2id_size), (rel_senses2id, rel_senses2id_weights, rel_senses2id_size)):
+def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size):
     """Batch generator where each sample represents a different discourse relation."""
 
     rel_ids = rel_ids[:]
@@ -132,7 +132,7 @@ def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, 
             x_rel_types = []
             x_rel_senses = []
             for rel_id in rel_ids[batch_start:batch_end]:
-                x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, token_start, token_end = relation_sample(rel_id, word_crop, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, (words2id, words2id_weights, words2id_size), (pos_tags2id, pos_tags2id_weights, pos_tags2id_size), (rel_types2id, rel_types2id_weights, rel_types2id_size), (rel_senses2id, rel_senses2id_weights, rel_senses2id_size))
+                x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, token_start, token_end = relation_sample(rel_id, word_crop, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size)
                 x_words_pad.append(x1_words_pad)
                 x_words_rand.append(x1_words_rand)
                 x_skipgram.append(x1_skipgram)

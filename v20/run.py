@@ -106,16 +106,16 @@ if not test_doc_ids:
 # build indexes
 if not all([ os.path.isfile(pkl) for pkl in [words2id_pkl, pos_tags2id_pkl, rel_types2id_pkl] ]):
     log.info("build indexes")
-    words2id, words2id_weights, words2id_size = save_to_pkl(words2id_pkl, build_words2id(train_words, max_size=words2id_size))
-    pos_tags2id, pos_tags2id_weights, pos_tags2id_size = save_to_pkl(pos_tags2id_pkl, build_pos_tags2id(train_pos_tags))
-    rel_types2id, rel_types2id_weights, rel_types2id_size = save_to_pkl(rel_types2id_pkl, build_rel_types2id(train_rel_types))
-    rel_senses2id, rel_senses2id_weights, rel_senses2id_size = save_to_pkl(rel_senses2id_pkl, build_rel_senses2id(train_rel_senses))
+    words2id, words2id_size = save_to_pkl(words2id_pkl, build_words2id(train_words, max_size=words2id_size))
+    pos_tags2id, pos_tags2id_size = save_to_pkl(pos_tags2id_pkl, build_pos_tags2id(train_pos_tags))
+    rel_types2id, rel_types2id_size = save_to_pkl(rel_types2id_pkl, build_rel_types2id(train_rel_types))
+    rel_senses2id, rel_senses2id_size = save_to_pkl(rel_senses2id_pkl, build_rel_senses2id(train_rel_senses))
 else:
     log.info("load previous indexes ({})".format(args.experiment_dir))
-    words2id, words2id_weights, words2id_size = load_from_pkl(words2id_pkl)
-    pos_tags2id, pos_tags2id_weights, pos_tags2id_size = load_from_pkl(pos_tags2id_pkl)
-    rel_types2id, rel_types2id_weights, rel_types2id_size = load_from_pkl(rel_types2id_pkl)
-    rel_senses2id, rel_senses2id_weights, rel_senses2id_size = load_from_pkl(rel_senses2id_pkl)
+    words2id, words2id_size = load_from_pkl(words2id_pkl)
+    pos_tags2id, pos_tags2id_size = load_from_pkl(pos_tags2id_pkl)
+    rel_types2id, rel_types2id_size = load_from_pkl(rel_types2id_pkl)
+    rel_senses2id, rel_senses2id_size = load_from_pkl(rel_senses2id_pkl)
 log.info("  words2id: {}, pos_tags2id: {}, rel_types2id: {}, rel_senses2id: {}".format(words2id_size, pos_tags2id_size, rel_types2id_size, rel_senses2id_size))
 
 # build model
@@ -146,7 +146,7 @@ class SenseValidation(Callback):
         rel_types_matches = 0
         rel_senses_matches = 0
         for rel_id in valid_rel_ids:
-            x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, token_start, token_end = relation_sample(rel_id, word_crop, max_len, valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, (words2id, words2id_weights, words2id_size), (pos_tags2id, pos_tags2id_weights, pos_tags2id_size), (rel_types2id, rel_types2id_weights, rel_types2id_size), (rel_senses2id, rel_senses2id_weights, rel_senses2id_size))
+            x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, token_start, token_end = relation_sample(rel_id, word_crop, max_len, valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size)
             y = self.model.predict({
                 'x_words_pad': np.asarray([x1_words_pad], dtype=np.int),
                 #'x_words_rand': np.asarray([x1_words_rand], dtype=np.int),
@@ -156,24 +156,24 @@ class SenseValidation(Callback):
                 #'x_rel_senses': np.asarray([x1_rel_senses], dtype=np.float32),
             })
 
-            rel_type = decode_x_rel_types(y['x_rel_types'][0], range(token_start, token_end), valid_rel_parts[rel_id], rel_types2id, rel_types2id_weights, rel_types2id_size)
+            rel_type = decode_x_rel_types(y['x_rel_types'][0], range(token_start, token_end), valid_rel_parts[rel_id], rel_types2id, rel_types2id_size)
             if rel_type == valid_rel_types[rel_id]:
                 rel_types_matches += 1
 
-            rel_sense = decode_x_rel_senses(y['x_rel_senses'][0], range(token_start, token_end), valid_rel_parts[rel_id], rel_senses2id, rel_senses2id_weights, rel_senses2id_size)
+            rel_sense = decode_x_rel_senses(y['x_rel_senses'][0], range(token_start, token_end), valid_rel_parts[rel_id], rel_senses2id, rel_senses2id_size)
             if rel_sense == valid_rel_senses[rel_id]:
                 rel_senses_matches += 1
 
         print len(valid_rel_ids), rel_types_matches, rel_senses_matches
 
 # train model
-train_iter = batch_generator(word_crop, max_len, batch_size, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, (words2id, words2id_weights, words2id_size), (pos_tags2id, pos_tags2id_weights, pos_tags2id_size), (rel_types2id, rel_types2id_weights, rel_types2id_size), (rel_senses2id, rel_senses2id_weights, rel_senses2id_size))
+train_iter = batch_generator(word_crop, max_len, batch_size, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size)
 callbacks = [
     #XXX:CSVHistory(stats_csv),
     ModelCheckpoint(filepath=weights_hdf5, monitor='avg_loss', mode='min', save_best_only=True),
     SenseValidation(model),
 ]
-model.fit_generator(train_iter, nb_epoch=epochs, samples_per_epoch=len(train_rel_parts), callbacks=callbacks)
+model.fit_generator(train_iter, nb_epoch=epochs, samples_per_epoch=len(train_rel_ids), callbacks=callbacks)
 
 # predict model
 # log.info("predict model")

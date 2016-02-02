@@ -29,15 +29,15 @@ def rel_senses_model(model, ins, max_len, embedding_dim, rel_senses2id_size, pre
 
 ### Build index
 
-def build_rel_senses2id(rel_senses, max_size=None, min_count=1, pos_tags2id=None):
+def build_rel_senses2id(rel_senses, max_size=None, min_count=1, rel_senses2id=None):
     """Build vocabulary index for all discourse relation senses (reserved ids: 0 = padding, 1 = out-of-vocabulary)."""
 
-    return build_index(rel_senses, max_size=max_size, min_count=min_count, index=pos_tags2id)
+    return build_index(rel_senses, max_size=max_size, min_count=min_count, index=rel_senses2id)
 
 
 ### Encode data
 
-def encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_weights, rel_senses2id_size, max_len, oov_key=""):
+def encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_size, max_len, oov_key=""):
     """Encode discourse relation senses as normalized vectors (sample, time_pad, rel_senses2id)."""
 
     # crop sequence if needed
@@ -67,7 +67,7 @@ def encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_weights, 
     return x
 
 
-def decode_x_rel_senses(x_rel_senses, token_range, relation, rel_senses2id, rel_senses2id_weights, rel_senses2id_size):
+def decode_x_rel_senses(x_rel_senses, token_range, relation, rel_senses2id, rel_senses2id_size):
     """Decode one discourse relation sense for a given relation spans."""
 
     # sum sense predictions for relation tokens
@@ -92,12 +92,10 @@ def decode_x_rel_senses(x_rel_senses, token_range, relation, rel_senses2id, rel_
 def test_build_rel_senses2id():
     rel_senses = {14903: 'Comparison.Contrast', 14904: 'Comparison.Concession', 14878: 'Comparison.Contrast'}
     t_rel_senses2id = {None: 0, "": 1, "Comparison.Contrast": 2, "Comparison.Concession": 3}
-    t_rel_senses2id_weights = dict([ (k, 1.) for k in t_rel_senses2id ])
     t_rel_senses2id_size = len(t_rel_senses2id)
 
-    rel_senses2id, rel_senses2id_weights, rel_senses2id_size = build_rel_senses2id(rel_senses)
+    rel_senses2id, rel_senses2id_size = build_rel_senses2id(rel_senses)
     assert rel_senses2id == t_rel_senses2id
-    assert rel_senses2id_weights == t_rel_senses2id_weights
     assert rel_senses2id_size == t_rel_senses2id_size
 
 def test_encode_x_rel_senses():
@@ -108,7 +106,6 @@ def test_encode_x_rel_senses():
         {'RelationIDs': [14903, 14904], 'SentenceID': 31, 'RelationTags': ['Implicit:Comparison.Contrast:14903:Arg2', 'Explicit:Comparison.Concession:14904:Arg1'], 'DocID': 'wsj_1000', 'TokenID': 861, 'SentenceOffset': 857, 'Text': 'having', 'ParagraphID': 13, 'RelationSpans': ['Arg2', 'Arg1']},
     ]
     rel_senses2id = {None: 0, "": 1, "Comparison.Contrast": 2, "Comparison.Concession": 3, "Contingency.Condition": 4}
-    rel_senses2id_weights = dict([ (k, 1.) for k in rel_senses2id ])
     rel_senses2id_size = len(rel_senses2id)
     max_len_0 = 3
     max_len_1 = 5
@@ -125,15 +122,14 @@ def test_encode_x_rel_senses():
         [1, 0, 0, 0, 0],
     ]
 
-    x_0 = encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_weights, rel_senses2id_size, max_len_0)
+    x_0 = encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_size, max_len_0)
     assert (x_0 == t_x_0).all()
 
-    x_1 = encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_weights, rel_senses2id_size, max_len_1)
+    x_1 = encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_size, max_len_1)
     assert (x_1 == t_x_1).all()
 
 def test_decode_x_rel_types():
     rel_senses2id = {None: 0, "": 1, "Comparison.Contrast": 2, "Comparison.Concession": 3, "Contingency.Condition": 4}
-    rel_senses2id_weights = dict([ (k, 1.) for k in rel_senses2id ])
     rel_senses2id_size = len(rel_senses2id)
     relation = {
         'Arg1': [854],
@@ -174,10 +170,10 @@ def test_decode_x_rel_types():
     ]
     t_sense_1 = 'Comparison.Concession'
 
-    sense_0 = decode_x_rel_senses(x_rel_senses_0, range(token_start, token_end), relation, rel_senses2id, rel_senses2id_weights, rel_senses2id_size)
+    sense_0 = decode_x_rel_senses(x_rel_senses_0, range(token_start, token_end), relation, rel_senses2id, rel_senses2id_size)
     assert sense_0 == t_sense_0
 
-    sense_1 = decode_x_rel_senses(x_rel_senses_1, range(token_start, token_end), relation, rel_senses2id, rel_senses2id_weights, rel_senses2id_size)
+    sense_1 = decode_x_rel_senses(x_rel_senses_1, range(token_start, token_end), relation, rel_senses2id, rel_senses2id_size)
     assert sense_1 == t_sense_1
 
 if __name__ == '__main__':

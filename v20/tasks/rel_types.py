@@ -37,7 +37,7 @@ def build_rel_types2id(rel_types, max_size=None, min_count=1, rel_types2id=None)
 
 ### Encode data
 
-def encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_weights, rel_types2id_size, max_len, oov_key=""):
+def encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_size, max_len, oov_key=""):
     """Encode discourse relation types as normalized vectors (sample, time_pad, rel_types2id)."""
 
     # crop sequence if needed
@@ -67,7 +67,7 @@ def encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_weights, rel
     return x
 
 
-def decode_x_rel_types(x_rel_types, token_range, relation, rel_types2id, rel_types2id_weights, rel_types2id_size):
+def decode_x_rel_types(x_rel_types, token_range, relation, rel_types2id, rel_types2id_size):
     """Decode one discourse relation type for a given relation spans."""
 
     # sum type predictions for relation tokens
@@ -91,12 +91,10 @@ def decode_x_rel_types(x_rel_types, token_range, relation, rel_types2id, rel_typ
 def test_build_rel_types2id():
     rel_types = {14903: 'Implicit', 14904: 'Explicit', 14878: 'Explicit'}
     t_rel_types2id = {None: 0, "": 1, "Explicit": 2, "Implicit": 3}
-    t_rel_types2id_weights = dict([ (k, 1.) for k in t_rel_types2id ])
     t_rel_types2id_size = len(t_rel_types2id)
 
-    rel_types2id, rel_types2id_weights, rel_types2id_size = build_rel_types2id(rel_types)
+    rel_types2id, rel_types2id_size = build_rel_types2id(rel_types)
     assert rel_types2id == t_rel_types2id
-    assert rel_types2id_weights == t_rel_types2id_weights
     assert rel_types2id_size == t_rel_types2id_size
 
 def test_encode_x_rel_types():
@@ -107,7 +105,6 @@ def test_encode_x_rel_types():
         {'RelationIDs': [14903, 14904], 'SentenceID': 31, 'RelationTags': ['Implicit:Comparison.Contrast:14903:Arg2', 'Explicit:Comparison.Concession:14904:Arg1'], 'DocID': 'wsj_1000', 'TokenID': 860, 'SentenceOffset': 857, 'Text': '``', 'ParagraphID': 13, 'RelationSpans': ['Arg2', 'Arg1']},
     ]
     rel_types2id = {None: 0, '': 1, 'Implicit': 2, 'Explicit': 3, 'EntRel': 4}
-    rel_types2id_weights = dict([ (k, 1.) for k in rel_types2id ])
     rel_types2id_size = len(rel_types2id)
     max_len_0 = 3
     max_len_1 = 5
@@ -124,15 +121,14 @@ def test_encode_x_rel_types():
         [1, 0, 0, 0, 0],
     ]
 
-    x_0 = encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_weights, rel_types2id_size, max_len_0)
+    x_0 = encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_size, max_len_0)
     assert (x_0 == t_x_0).all()
 
-    x_1 = encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_weights, rel_types2id_size, max_len_1)
+    x_1 = encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_size, max_len_1)
     assert (x_1 == t_x_1).all()
 
 def test_decode_x_rel_types():
     rel_types2id = {None: 0, '': 1, 'Implicit': 2, 'Explicit': 3, 'EntRel': 4}
-    rel_types2id_weights = dict([ (k, 1.) for k in rel_types2id ])
     rel_types2id_size = len(rel_types2id)
     relation = {
         'Arg1': [854],
@@ -173,10 +169,10 @@ def test_decode_x_rel_types():
     ]
     t_type_1 = 'Explicit'
 
-    type_0 = decode_x_rel_types(x_rel_types_0, range(token_start, token_end), relation, rel_types2id, rel_types2id_weights, rel_types2id_size)
+    type_0 = decode_x_rel_types(x_rel_types_0, range(token_start, token_end), relation, rel_types2id, rel_types2id_size)
     assert type_0 == t_type_0
 
-    type_1 = decode_x_rel_types(x_rel_types_1, range(token_start, token_end), relation, rel_types2id, rel_types2id_weights, rel_types2id_size)
+    type_1 = decode_x_rel_types(x_rel_types_1, range(token_start, token_end), relation, rel_types2id, rel_types2id_size)
     assert type_1 == t_type_1
 
 if __name__ == '__main__':

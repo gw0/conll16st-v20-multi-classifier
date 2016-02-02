@@ -58,12 +58,9 @@ def build_index(sequences, max_size=None, min_count=1, index=None):
     # mapping of strings to vocabulary ids
     index.update([ (k, i) for i, k in enumerate(index_rev) ])
 
-    # equal weights for all
-    index_weights = dict([ (k, 1.) for k in index ])
-
-    # largest vocabulary id
+    # largest vocabulary id + 1
     index_size = len(index)
-    return index, index_weights, index_size
+    return index, index_size
 
 
 def map_sequence(sequence, index, oov_key=""):
@@ -147,12 +144,10 @@ def test_window_to_offsets_neg():
 def test_index_dict():
     sequences = {1: 'foo', 2: 'foo', 10: 'bar'}
     t_index = {None: 0, "": 1, "foo": 2, "bar": 3}
-    t_index_weights = dict([ (k, 1.) for k in t_index ])
     t_index_size = len(t_index)
 
-    index, index_weights, index_size = build_index(sequences)
+    index, index_size = build_index(sequences)
     assert index == t_index
-    assert index_weights == t_index_weights
     assert index_size == t_index_size
 
 def test_index_list_of_lists():
@@ -162,12 +157,10 @@ def test_index_list_of_lists():
     ]
     min_count = 2
     t_index = {None: 0, "": 1, "a": 2, "b": 3}
-    t_index_weights = dict([ (k, 1.) for k in t_index ])
     t_index_size = len(t_index)
 
-    index, index_weights, index_size = build_index(sequences, min_count=min_count)
+    index, index_size = build_index(sequences, min_count=min_count)
     assert index == t_index
-    assert index_weights == t_index_weights
     assert index_size == t_index_size
 
 def test_map_sequence():
@@ -226,9 +219,8 @@ def test_onehot_sequence():
 def test_save_load_pkl(tmpdir):
     pkl = str(tmpdir.join("test_save_load_pkl.pkl"))
     t_index = {None: 0, "": 1, "foo": 2, "bar": 3}
-    t_index_weights = dict([ (k, 1.) for k in t_index ])
     t_index_size = len(t_index)
-    t_obj = (t_index, t_index_weights, t_index_size)
+    t_obj = (t_index, t_index_size)
 
     obj = save_to_pkl(pkl, t_obj)
     assert obj == t_obj
