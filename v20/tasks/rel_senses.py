@@ -93,7 +93,7 @@ def decode_x_rel_senses(x_rel_senses, token_range, relation, rel_senses2id, rel_
         if totals[j] > max_total:
             max_total = totals[j]
             rel_sense = t
-    return rel_sense
+    return rel_sense, totals
 
 
 

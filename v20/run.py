@@ -166,9 +166,9 @@ class SenseValidation(Callback):
             if rel_type == valid_rel_types[rel_id]:
                 rel_types_matches += 1
 
-            #rel_sense, rel_sense_totals = decode_x_rel_senses(y['x_rel_senses'][0], range(token_start, token_end), valid_rel_parts[rel_id], rel_senses2id, rel_senses2id_size)
-            #if rel_sense == valid_rel_senses[rel_id]:
-            #    rel_senses_matches += 1
+            rel_sense, rel_sense_totals = decode_x_rel_senses(y['x_rel_senses'][0], range(token_start, token_end), valid_rel_parts[rel_id], rel_senses2id, rel_senses2id_size)
+            if rel_sense == valid_rel_senses[rel_id]:
+                rel_senses_matches += 1
 
             #if valid_rel_types[rel_id] != rel_type:
             #    print rel_id, valid_rel_types[rel_id], rel_type, rel_type_totals
