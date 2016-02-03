@@ -12,7 +12,7 @@ import logging
 import os
 from keras import backend as K
 from keras.utils.visualize_util import plot
-from keras.callbacks import Callback, ModelCheckpoint
+from keras.callbacks import Callback, ModelCheckpoint, EarlyStopping
 
 from conll16st.load import load_all
 from tasks.common import conv_window_to_offsets, save_to_pkl, load_from_pkl
@@ -57,7 +57,8 @@ epochs = 10000
 batch_size = 10
 
 word_crop = 100  #= max([ len(s) for s in train_words ])
-embedding_dim = 40  #100
+embedding_dim = 80  #100
+dropout_p = 0.5  #0.5
 words2id_size = 50000  #= None is computed
 skipgram_window_size = 4
 skipgram_negative_samples = 0  #skipgram_window_size
@@ -67,7 +68,7 @@ filter_senses = None  #["Contingency.Condition"]
 max_len = word_crop + max(abs(min(skipgram_offsets)), abs(max(skipgram_offsets)))
 
 log.info("configuration ({})".format(args.experiment_dir))
-for var in ['args.experiment_dir', 'args.train_dir', 'args.valid_dir', 'args.test_dir', 'args.output_dir', 'K._config', 'os.getenv("THEANO_FLAGS")', 'epochs', 'batch_size', 'word_crop', 'embedding_dim', 'words2id_size', 'skipgram_window_size', 'skipgram_negative_samples', 'skipgram_offsets', 'filter_types', 'filter_senses', 'max_len']:
+for var in ['args.experiment_dir', 'args.train_dir', 'args.valid_dir', 'args.test_dir', 'args.output_dir', 'K._config', 'os.getenv("THEANO_FLAGS")', 'epochs', 'batch_size', 'word_crop', 'embedding_dim', 'dropout_p', 'words2id_size', 'skipgram_window_size', 'skipgram_negative_samples', 'skipgram_offsets', 'filter_types', 'filter_senses', 'max_len']:
     log.info("  {}: {}".format(var, eval(var)))
 
 # experiment files
@@ -94,13 +95,19 @@ if not train_doc_ids:
     raise IOError("Failed to load dataset!")
 
 log.info("load dataset for validation ({})".format(args.valid_dir))
-valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold = load_all(args.valid_dir, filter_types=filter_types, filter_senses=filter_senses)
+if args.valid_dir == args.train_dir:
+    valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold = train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, train_relations_gold
+else:
+    valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold = load_all(args.valid_dir, filter_types=filter_types, filter_senses=filter_senses)
 log.info("  doc_ids: {}, words: {}, rel_ids: {}, relation tokens: {}".format(len(valid_doc_ids), sum([ len(s) for s in valid_words.itervalues() ]), len(valid_rel_ids), sum([ valid_rel_parts[rel_id]['TokenCount'] for rel_id in valid_rel_parts ])))
 if not valid_doc_ids:
     raise IOError("Failed to load dataset!")
 
 log.info("load dataset for testing ({})".format(args.test_dir))
-test_doc_ids, test_words, test_word_metas, test_pos_tags, test_dependencies, test_parsetrees, test_rel_ids, test_rel_parts, test_rel_types, test_rel_senses, test_relations_gold = load_all(args.test_dir, filter_types=filter_types, filter_senses=filter_senses)
+if args.test_dir == args.valid_dir:
+    test_doc_ids, test_words, test_word_metas, test_pos_tags, test_dependencies, test_parsetrees, test_rel_ids, test_rel_parts, test_rel_types, test_rel_senses, test_relations_gold = valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold
+else:
+    test_doc_ids, test_words, test_word_metas, test_pos_tags, test_dependencies, test_parsetrees, test_rel_ids, test_rel_parts, test_rel_types, test_rel_senses, test_relations_gold = load_all(args.test_dir, filter_types=filter_types, filter_senses=filter_senses)
 log.info("  doc_ids: {}, words: {}, rel_ids: {}, relation tokens: {}".format(len(test_doc_ids), sum([ len(s) for s in test_words.itervalues() ]), len(test_rel_ids), sum([ test_rel_parts[rel_id]['TokenCount'] for rel_id in test_rel_parts ])))
 if not test_doc_ids:
     raise IOError("Failed to load dataset!")
@@ -129,7 +136,7 @@ log.info("  words2id: {}, pos_tags2id: {}, rel_types2id: {}, rel_senses2id: {}, 
 
 # build model
 log.info("build model")
-model = build_model(max_len, embedding_dim, words2id_size, pos_tags2id_size, rel_types2id_size, rel_senses2id_size, rel_marking2id_size)
+model = build_model(max_len, embedding_dim, dropout_p, words2id_size, pos_tags2id_size, rel_types2id_size, rel_senses2id_size, rel_marking2id_size)
 
 # plot model
 with open(model_yaml, 'w') as f:
@@ -193,8 +200,9 @@ np.set_printoptions(precision=2, suppress=True)
 train_iter = batch_generator(word_crop, max_len, batch_size, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
 callbacks = [
     #XXX:CSVHistory(stats_csv),
-    ModelCheckpoint(filepath=weights_hdf5, monitor='avg_loss', mode='min', save_best_only=True),
+    ModelCheckpoint(monitor='avg_loss', mode='min', filepath=weights_hdf5, save_best_only=True),
     SenseValidation(model),
+    EarlyStopping(monitor='avg_loss', mode='min', patience=100),
 ]
 model.fit_generator(train_iter, nb_epoch=epochs, samples_per_epoch=len(train_rel_ids), callbacks=callbacks)
 

@@ -13,7 +13,8 @@ from keras.models import make_batches
 from keras.models import Graph
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import GRU
-from keras.layers.core import TimeDistributedDense, Reshape
+from keras.layers.core import TimeDistributedDense, Reshape, Dropout
+from keras.layers.noise import GaussianDropout
 
 from tasks.words import encode_x_words, encode_x_words_rand
 from tasks.pos_tags import pos_tags_model, encode_x_pos_tags
@@ -25,7 +26,7 @@ from conll16st.relations import rtsip_to_tag
 
 ### Model
 
-def build_model(max_len, embedding_dim, words2id_size, pos_tags2id_size, rel_types2id_size, rel_senses2id_size, rel_marking2id_size):
+def build_model(max_len, embedding_dim, dropout_p, words2id_size, pos_tags2id_size, rel_types2id_size, rel_senses2id_size, rel_marking2id_size):
 
     model = Graph()
     shared_layers = 2
@@ -54,11 +55,18 @@ def build_model(max_len, embedding_dim, words2id_size, pos_tags2id_size, rel_typ
     for n in range(2, shared_layers + 1):
         shared_fwd = 'shared_{}_fwd'.format(n)
         shared_bck = 'shared_{}_bck'.format(n)
-        shared_join = 'shared_{}'.format(n)
+        if dropout_p > 0.:
+            shared_join = 'shared_{}_join'.format(n)
+        else:
+            shared_join = 'shared_{}'.format(n)
+        shared_drop = 'shared_{}'.format(n)
         model.add_node(GRU(embedding_dim, return_sequences=True, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal'), name=shared_fwd, input=shared_prev)
         model.add_node(GRU(embedding_dim, return_sequences=True, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal', go_backwards=True), name=shared_bck, input=shared_prev)
         model.add_node(TimeDistributedDense(embedding_dim, init='he_uniform'), name=shared_join, inputs=[shared_prev, shared_fwd, shared_bck], merge_mode='concat')
-        shared_prev = shared_join
+        if dropout_p > 0.:
+            model.add_node(Dropout(dropout_p), name=shared_drop, input=shared_join)
+            #model.add_node(GaussianDropout(dropout_p), name=shared_drop, input=shared_join)
+        shared_prev = shared_drop
 
     # model: skip-gram labels (sample, time_pad, offset)
     if 'x_skipgram' in loss:
