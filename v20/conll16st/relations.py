@@ -37,8 +37,8 @@ def filter_tags(tags, prefixes=None):
 def strip_sense_levels(rel_sense, levels=None):
     """Strip relation sense to top levels."""
 
-    if levels:
-        rel_sense = ":".join(rel_sense.split(":")[:levels])
+    if levels is not None:
+        rel_sense = ".".join(rel_sense.split(".")[:levels])
     return rel_sense
 
 
@@ -196,11 +196,18 @@ def test_rel_senses():
     dataset_dir = "./conll16st-en-trial"
     t_rel0_id = 14905
     t_rel0 = 'Contingency.Condition'
+    t_rel1_id = 14905
+    t_rel1 = 'Contingency'
 
     relations_gold = load_relations_gold(dataset_dir)
     rel_senses = get_rel_senses(relations_gold)
     rel0 = rel_senses[t_rel0_id]
     assert rel0 == t_rel0
+
+    relations_gold = load_relations_gold(dataset_dir)
+    rel_senses = get_rel_senses(relations_gold, levels=1)
+    rel1 = rel_senses[t_rel1_id]
+    assert rel1 == t_rel1
 
 def test_relation_tags():
     dataset_dir = "./conll16st-en-trial"
