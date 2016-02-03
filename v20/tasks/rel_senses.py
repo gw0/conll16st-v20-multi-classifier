@@ -180,10 +180,10 @@ def test_decode_x_rel_types():
     ]
     t_sense_1 = 'Comparison.Concession'
 
-    sense_0 = decode_x_rel_senses(x_rel_senses_0, range(token_start, token_end), relation, rel_senses2id, rel_senses2id_size)
+    sense_0, totals_0 = decode_x_rel_senses(x_rel_senses_0, range(token_start, token_end), relation, rel_senses2id, rel_senses2id_size)
     assert sense_0 == t_sense_0
 
-    sense_1 = decode_x_rel_senses(x_rel_senses_1, range(token_start, token_end), relation, rel_senses2id, rel_senses2id_size)
+    sense_1, totals_1 = decode_x_rel_senses(x_rel_senses_1, range(token_start, token_end), relation, rel_senses2id, rel_senses2id_size)
     assert sense_1 == t_sense_1
 
 if __name__ == '__main__':

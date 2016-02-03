@@ -179,10 +179,10 @@ def test_decode_x_rel_types():
     ]
     t_type_1 = 'Explicit'
 
-    type_0 = decode_x_rel_types(x_rel_types_0, range(token_start, token_end), relation, rel_types2id, rel_types2id_size)
+    type_0, totals_0 = decode_x_rel_types(x_rel_types_0, range(token_start, token_end), relation, rel_types2id, rel_types2id_size)
     assert type_0 == t_type_0
 
-    type_1 = decode_x_rel_types(x_rel_types_1, range(token_start, token_end), relation, rel_types2id, rel_types2id_size)
+    type_1, totals_1 = decode_x_rel_types(x_rel_types_1, range(token_start, token_end), relation, rel_types2id, rel_types2id_size)
     assert type_1 == t_type_1
 
 if __name__ == '__main__':
