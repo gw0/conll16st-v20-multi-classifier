@@ -40,9 +40,9 @@ def load_all(dataset_dir, doc_ids=None, filter_types=None, filter_senses=None):
 
     # extract data by relation id
     rel_parts = get_rel_parts(relationsnos_gold)
-    rel_types = get_rel_types(relations_gold)
-    rel_senses = get_rel_senses(relations_gold)
     rel_ids = sorted(rel_parts.keys())
+    rel_types = get_rel_types(relations_gold)
+    rel_senses = get_rel_senses(relations_gold, levels=1)
 
     # add extra fields
     add_relation_tags(word_metas, rel_types, rel_senses)

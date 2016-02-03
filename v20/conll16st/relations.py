@@ -34,11 +34,11 @@ def filter_tags(tags, prefixes=None):
     return tags
 
 
-def strip_level_sense(rel_sense, level=None):
+def strip_sense_levels(rel_sense, levels=None):
     """Strip relation sense to top levels."""
 
-    if level:
-        rel_sense = ":".join(rel_sense.split(":")[:level])
+    if levels:
+        rel_sense = ":".join(rel_sense.split(":")[:levels])
     return rel_sense
 
 
@@ -117,7 +117,7 @@ def get_rel_types(relations_gold, filter_types=None):
     return rel_types
 
 
-def get_rel_senses(relations_gold, level=None, filter_senses=None):
+def get_rel_senses(relations_gold, levels=None, filter_senses=None):
     """Extract discourse relation senses by relation id from CoNLL16st corpus.
 
         rel_senses[14905] = 'Contingency.Condition'
@@ -128,7 +128,7 @@ def get_rel_senses(relations_gold, level=None, filter_senses=None):
         rel_sense = gold['Sense'][0]  # only first sense
         if filter_senses and rel_sense not in filter_senses:
             continue
-        rel_sense = strip_level_sense(rel_sense, level)  # strip to top level senses
+        rel_sense = strip_sense_levels(rel_sense, levels)  # strip to top level senses
         rel_senses[rel_id] = rel_sense
     return rel_senses
 
