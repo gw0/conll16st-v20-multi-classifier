@@ -22,8 +22,8 @@ def conv_window_to_offsets(window_size, negative_samples, word_crop):
     return offsets
 
 
-def build_index(sequences, max_size=None, min_count=1, index=None):
-    """Build vocabulary index from dicts or lists of strings (reserved ids: 0 = padding, 1 = out-of-vocabulary)."""
+def build_index(sequences, max_size=None, min_count=1, index=None, vocab_start=2, none_key=None, none_ids=0, oov_key="", oov_ids=1):
+    """Build vocabulary index from dicts or lists of strings (reserved ids: 0 = none/padding, 1 = out-of-vocabulary)."""
     if index is None:
         index = {}
 
@@ -51,15 +51,17 @@ def build_index(sequences, max_size=None, min_count=1, index=None):
             del cnts[k]
 
     # rank strings by decreasing occurrences and use as index
-    index_rev = [None, ""] + sorted(cnts, key=cnts.get, reverse=True)
+    index_rev = sorted(cnts, key=cnts.get, reverse=True)
     if max_size is not None:
         index_rev = index_rev[:max_size]
 
     # mapping of strings to vocabulary ids
-    index.update([ (k, i) for i, k in enumerate(index_rev) ])
+    index.update([ (k, i) for i, k in enumerate(index_rev, start=vocab_start) ])
+    index_size = vocab_start + len(index)  # largest vocabulary id + 1
 
-    # largest vocabulary id + 1
-    index_size = len(index)
+    # add none/padding and out-of-vocabulary ids
+    index[none_key] = none_ids
+    index[oov_key] = oov_ids
     return index, index_size
 
 
