@@ -57,7 +57,7 @@ epochs = 10000
 batch_size = 10
 
 word_crop = 100  #= max([ len(s) for s in train_words ])
-embedding_dim = 80  #100
+embedding_dim = 40  #100
 dropout_p = 0.5  #0.5
 words2id_size = 50000  #= None is computed
 skipgram_window_size = 4
@@ -159,6 +159,33 @@ class SenseValidation(Callback):
         self.model = model
 
     def on_epoch_end(self, epoch, logs={}):
+        #XXX: experiment to detect overfitting
+        rel_types_matches = 0
+        rel_senses_matches = 0
+        for rel_id in train_rel_ids:
+            # predict for each relation separately
+            x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, x1_rel_focus, token_start, token_end = relation_sample(rel_id, word_crop, max_len, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
+            y = self.model.predict({
+                'x_words_pad': np.asarray([x1_words_pad], dtype=np.int),
+                #'x_words_rand': np.asarray([x1_words_rand], dtype=np.int),
+                'x_rel_focus': np.asarray([x1_rel_focus], dtype=np.float32),
+                #'x_skipgram': np.asarray([x1_skipgram], dtype=np.float32),
+                #'x_pos_tags': np.asarray([x1_pos_tags], dtype=np.float32),
+                #'x_rel_types': np.asarray([x1_rel_types], dtype=np.float32),
+                #'x_rel_senses': np.asarray([x1_rel_senses], dtype=np.float32),
+            })
+
+            if 'x_rel_types' in y:
+                rel_type, rel_type_totals = decode_x_rel_types(y['x_rel_types'][0], range(token_start, token_end), train_rel_parts[rel_id], rel_types2id, rel_types2id_size)
+                if rel_type == train_rel_types[rel_id]:
+                    rel_types_matches += 1
+
+            if 'x_rel_senses' in y:
+                rel_sense, rel_sense_totals = decode_x_rel_senses(y['x_rel_senses'][0], range(token_start, token_end), train_rel_parts[rel_id], rel_senses2id, rel_senses2id_size)
+                if rel_sense == train_rel_senses[rel_id]:
+                    rel_senses_matches += 1
+        print len(train_rel_ids), rel_types_matches, rel_senses_matches
+
         rel_types_matches = 0
         rel_senses_matches = 0
         for rel_id in valid_rel_ids:
@@ -202,7 +229,7 @@ callbacks = [
     #XXX:CSVHistory(stats_csv),
     ModelCheckpoint(monitor='avg_loss', mode='min', filepath=weights_hdf5, save_best_only=True),
     SenseValidation(model),
-    EarlyStopping(monitor='avg_loss', mode='min', patience=100),
+    #EarlyStopping(monitor='avg_loss', mode='min', patience=100),
 ]
 model.fit_generator(train_iter, nb_epoch=epochs, samples_per_epoch=len(train_rel_ids), callbacks=callbacks)
 
