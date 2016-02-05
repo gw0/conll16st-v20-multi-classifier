@@ -67,25 +67,31 @@ filter_types = None  #["Explicit"]
 filter_senses = None  #["Contingency.Condition"]
 max_len = word_crop + max(abs(min(skipgram_offsets)), abs(max(skipgram_offsets)))
 
-log.info("configuration ({})".format(args.experiment_dir))
-for var in ['args.experiment_dir', 'args.train_dir', 'args.valid_dir', 'args.test_dir', 'args.output_dir', 'K._config', 'os.getenv("THEANO_FLAGS")', 'epochs', 'batch_size', 'word_crop', 'embedding_dim', 'dropout_p', 'words2id_size', 'skipgram_window_size', 'skipgram_negative_samples', 'skipgram_offsets', 'filter_types', 'filter_senses', 'max_len']:
-    log.info("  {}: {}".format(var, eval(var)))
-
-# experiment files
-if args.clean and os.path.isdir(args.experiment_dir):
-    import shutil
-    shutil.rmtree(args.experiment_dir)
-if not os.path.isdir(args.experiment_dir):
-    os.makedirs(args.experiment_dir)
+# files
+console_log = "{}/console.log".format(args.experiment_dir)
+tensorboard_dir = "{}/".format(args.experiment_dir)
+model_yaml = "{}/model.yaml".format(args.experiment_dir)
+model_png = "{}/model.png".format(args.experiment_dir)
+weights_hdf5 = "{}/weights.hdf5".format(args.experiment_dir)
 words2id_pkl = "{}/words2id.pkl".format(args.experiment_dir)
 pos_tags2id_pkl = "{}/pos_tags2id.pkl".format(args.experiment_dir)
 rel_types2id_pkl = "{}/rel_types2id.pkl".format(args.experiment_dir)
 rel_senses2id_pkl = "{}/rel_senses2id.pkl".format(args.experiment_dir)
 rel_marking2id_pkl = "{}/rel_marking2id.pkl".format(args.experiment_dir)
-model_yaml = "{}/model.yaml".format(args.experiment_dir)
-model_png = "{}/model.png".format(args.experiment_dir)
-stats_csv = "{}/stats.csv".format(args.experiment_dir)
-weights_hdf5 = "{}/weights.hdf5".format(args.experiment_dir)
+
+# initialize experiment
+if args.clean and os.path.isdir(args.experiment_dir):
+    import shutil
+    shutil.rmtree(args.experiment_dir)
+if not os.path.isdir(args.experiment_dir):
+    os.makedirs(args.experiment_dir)
+log_fh = logging.FileHandler(console_log, mode='a', encoding='utf8')
+log_fh.setFormatter(logging.root.handlers[0].formatter)
+logging.root.addHandler(log_fh)
+
+log.info("configuration ({})".format(args.experiment_dir))
+for var in ['args.experiment_dir', 'args.train_dir', 'args.valid_dir', 'args.test_dir', 'args.output_dir', 'K._config', 'os.getenv("THEANO_FLAGS")', 'epochs', 'batch_size', 'word_crop', 'embedding_dim', 'dropout_p', 'words2id_size', 'skipgram_window_size', 'skipgram_negative_samples', 'skipgram_offsets', 'filter_types', 'filter_senses', 'max_len']:
+    log.info("  {}: {}".format(var, eval(var)))
 
 # load datasets
 log.info("load dataset for training ({})".format(args.train_dir))
@@ -154,6 +160,7 @@ else:
     model.load_weights(weights_hdf5)
 
 # train model
+log.info("train model")
 train_iter = batch_generator(word_crop, max_len, batch_size, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
 callbacks = [
     #XXX:CSVHistory(stats_csv),
