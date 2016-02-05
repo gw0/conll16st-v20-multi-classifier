@@ -1,16 +1,14 @@
 # Discourse relation sense classification (CoNLL16st).
 #
 # Example:
-#   NAME=conll16st-v20-05
+#   NAME=conll16st-v20-08
 #   DATAT=en-train DATAV=en-dev DATAX=en-trial
 #   DATAT=en-dev DATAV=en-dev DATAX=en-trial
 #   DATAT=zh-train DATAV=zh-dev DATAX=zh-trial
 #   DATAT=zh-dev DATAV=zh-dev DATAX=zh-trial
 #   docker build -t $NAME .
-#   docker run -d -v /srv/storage/conll16st:/srv/ex --name $NAME-$DATAT $NAME ex/$NAME-$DATAT conll16st-$DATAT conll16st-$DATAV conll16st-$DATAX ex/$NAME-$DATAT
+#   docker run -d -v /srv/storage/conll16st:/srv/ex --name $NAME-$DATAT $NAME ex/$NAME-$DATAT conll16st-$DATAT conll16st-$DATAV conll16st-$DATAX ex/$NAME-$DATAT --clean
 #   docker logs -f $NAME-$DATAT
-#
-# Author: GW [http://gw.tnode.com/] <gw.2016@tnode.com>
 
 FROM debian:jessie
 MAINTAINER gw0 [http://gw.tnode.com/] <gw.2016@tnode.com>
