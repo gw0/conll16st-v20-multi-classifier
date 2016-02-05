@@ -30,7 +30,7 @@ def rel_senses_model(model, ins, max_len, embedding_dim, rel_senses2id_size, foc
     model.add_node(Activation('softmax'), name=pre + '_softmax', input=pre + '_dense')
 
     # multiplication to focus the activations (doc, time_pad, rel_senses2id)
-    model.add_node(Activation('linear'), name=pre + '_out', inputs=[pre + '_softmax', pre + '_focus'], merge_mode='mul')
+    model.add_node(Activation('linear'), name=pre + '_out', inputs=[pre + '_focus', pre + '_softmax'], merge_mode='mul')
     return pre + '_out'
 
 

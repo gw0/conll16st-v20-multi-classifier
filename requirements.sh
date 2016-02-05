@@ -22,7 +22,7 @@ source venv/bin/activate
 # Prerequisites for pip
 sudo apt-get install -y git
 
-# Prerequisites for Theano
+# Prerequisites general
 sudo apt-get install -y python-numpy python-scipy
 [ ! -d $SITE_PACKAGES/numpy ] && cp -a $DIST_PACKAGES/numpy* $SITE_PACKAGES
 [ ! -d $SITE_PACKAGES/scipy ] && cp -a $DIST_PACKAGES/scipy* $SITE_PACKAGES
@@ -32,7 +32,8 @@ sudo apt-get install -y python-h5py libyaml-dev graphviz
 [ ! -d $SITE_PACKAGES/h5py ] && cp -a $DIST_PACKAGES/h5py* $SITE_PACKAGES
 
 # Requirements
-pip install git+https://github.com/Theano/Theano.git
+#pip install git+https://github.com/Theano/Theano.git
+pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.6.0-cp27-none-linux_x86_64.whl
 pip install pydot-ng
 pip install git+https://github.com/fchollet/keras.git
 pip install pyparsing

@@ -39,14 +39,15 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, pos_tags2id_si
     }
 
     # input: word ids with masked post-padding (doc, time_pad)
-    model.add_input(name='x_words_pad', input_shape=(None,), dtype='int')
+    model.add_input(name='x_words_pad', input_shape=(max_len,), dtype='int')
 
     # input: word ids with random post-padding (doc, time_pad)
     if 'x_skipgram' in loss:
-        model.add_input(name='x_words_rand', input_shape=(None,), dtype='int')
+        model.add_input(name='x_words_rand', input_shape=(max_len,), dtype='int')
 
     # input: discourse relation focus marking (doc, time_pad)
-    model.add_input(name='x_rel_focus', input_shape=(max_len,), dtype='int')
+    if 'x_rel_types' in loss or 'x_rel_senses' in loss:
+        model.add_input(name='x_rel_focus', input_shape=(max_len,))
 
     # shared 1: word embedding layer (doc, time_pad, emb)
     model.add_node(Embedding(words2id_size, embedding_dim, input_length=max_len, init='glorot_uniform', mask_zero=True), name='shared_1', input='x_words_pad')
