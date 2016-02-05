@@ -58,7 +58,7 @@ batch_size = 10
 
 word_crop = 100  #= max([ len(s) for s in train_words ])
 embedding_dim = 20  #20
-dropout_p = 0.  #0.5
+dropout_p = 0.5  #0.5
 words2id_size = 50000  #= None is computed
 skipgram_window_size = 4
 skipgram_negative_samples = 0  #skipgram_window_size
