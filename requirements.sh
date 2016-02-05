@@ -32,8 +32,8 @@ sudo apt-get install -y python-h5py libyaml-dev graphviz
 [ ! -d $SITE_PACKAGES/h5py ] && cp -a $DIST_PACKAGES/h5py* $SITE_PACKAGES
 
 # Requirements
-#pip install git+https://github.com/Theano/Theano.git
-pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.6.0-cp27-none-linux_x86_64.whl
+pip install git+https://github.com/Theano/Theano.git
+#pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.6.0-cp27-none-linux_x86_64.whl
 pip install pydot-ng
 pip install git+https://github.com/fchollet/keras.git
 pip install pyparsing

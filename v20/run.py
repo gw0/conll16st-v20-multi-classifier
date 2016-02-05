@@ -12,7 +12,7 @@ import logging
 import os
 from keras import backend as K
 from keras.utils.visualize_util import plot
-from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 
 from conll16st.load import load_all
 from tasks.common import conv_window_to_offsets, save_to_pkl, load_from_pkl
@@ -69,7 +69,6 @@ max_len = word_crop + max(abs(min(skipgram_offsets)), abs(max(skipgram_offsets))
 
 # files
 console_log = "{}/console.log".format(args.experiment_dir)
-tensorboard_dir = "{}/".format(args.experiment_dir)
 model_yaml = "{}/model.yaml".format(args.experiment_dir)
 model_png = "{}/model.png".format(args.experiment_dir)
 weights_hdf5 = "{}/weights.hdf5".format(args.experiment_dir)
@@ -163,7 +162,6 @@ else:
 log.info("train model")
 train_iter = batch_generator(word_crop, max_len, batch_size, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
 callbacks = [
-    TensorBoard(log_dir=tensorboard_dir, histogram_freq=1),
     #XXX:CSVHistory(stats_csv),
     ModelCheckpoint(monitor='avg_loss', mode='min', filepath=weights_hdf5, save_best_only=True),
     SenseValidation(word_crop, max_len, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, train_relations_gold, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
