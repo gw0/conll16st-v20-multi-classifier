@@ -15,11 +15,12 @@ from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import GRU
 from keras.layers.core import TimeDistributedDense, Reshape, Dropout
 from keras.layers.noise import GaussianDropout
+from keras.callbacks import Callback
 
 from tasks.words import encode_x_words, encode_x_words_rand
 from tasks.pos_tags import pos_tags_model, encode_x_pos_tags
-from tasks.rel_types import rel_types_model, encode_x_rel_types
-from tasks.rel_senses import rel_senses_model, encode_x_rel_senses
+from tasks.rel_types import rel_types_model, encode_x_rel_types, decode_x_rel_types
+from tasks.rel_senses import rel_senses_model, encode_x_rel_senses, decode_x_rel_senses
 from tasks.rel_marking import rel_marking_model, encode_x1_rel_marking, encode_x1_rel_focus
 from conll16st.relations import rtsip_to_tag
 
@@ -94,14 +95,9 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, pos_tags2id_si
 
 ### Prepare data
 
-def relation_sample(rel_id, word_crop, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
-    doc_id = rel_parts[rel_id]['DocID']
-    words_len = len(words[doc_id])
-    token_min = rel_parts[rel_id]['TokenMin']
-    token_max = rel_parts[rel_id]['TokenMax']
-    rel_tag = rtsip_to_tag(rel_types[rel_id], rel_senses[rel_id], rel_id, "")
+def token_boundary_equal(token_min, token_max, word_crop, words_len):
+    """Determine token boundaries equally around each relation."""
 
-    # determine token boundaries around each relation
     if token_max - token_min < word_crop:
         token_start = token_min - (word_crop - (token_max - token_min) + 1) // 2
     else:
@@ -114,6 +110,34 @@ def relation_sample(rel_id, word_crop, max_len, doc_ids, words, word_metas, pos_
         if token_start < 0:
             token_start = 0
         token_end = token_start + word_crop
+    if token_end > words_len:
+        token_end = words_len
+    return token_start, token_end
+
+
+def token_boundary_random(token_min, token_max, word_crop, words_len, padding_pre=3, padding_post=3):
+    """Randomize token boundaries around each relation."""
+
+    token_start = token_min - padding_pre
+    token_end = token_max + padding_post
+    padding_max = word_crop - (token_end - token_start)
+    if padding_max > 0:
+        token_start = random.randint(token_start - padding_max, token_start)
+        if token_start < 0:
+            token_start = 0
+        token_end = random.randint(token_end, token_start + word_crop)
+    else:
+        if token_start < 0:
+            token_start = 0
+        token_end = token_start + word_crop
+    if token_end > words_len:
+        token_end = words_len
+    return token_start, token_end
+
+
+def relation_sample(rel_id, token_start, token_end, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
+    doc_id = rel_parts[rel_id]['DocID']
+    rel_tag = rtsip_to_tag(rel_types[rel_id], rel_senses[rel_id], rel_id, "")
 
     # prepare data
     words_slice = words[doc_id][token_start:token_end]
@@ -129,7 +153,7 @@ def relation_sample(rel_id, word_crop, max_len, doc_ids, words, word_metas, pos_
     x1_rel_types = encode_x_rel_types(word_metas_slice, rel_types2id, rel_types2id_size, max_len, filter_prefixes=[rel_tag])
     x1_rel_senses = encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_size, max_len, filter_prefixes=[rel_tag])
     x1_rel_focus = encode_x1_rel_focus(word_metas_slice, max_len, filter_prefixes=[rel_tag])
-    return x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, x1_rel_focus, token_start, token_end
+    return x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, x1_rel_focus
 
 
 def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
@@ -151,7 +175,12 @@ def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, 
             x_rel_senses = []
             x_rel_focus = []
             for rel_id in rel_ids[batch_start:batch_end]:
-                x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, x1_rel_focus, token_start, token_end = relation_sample(rel_id, word_crop, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
+                doc_id = rel_parts[rel_id]['DocID']
+                words_len = len(words[doc_id])
+                token_min = rel_parts[rel_id]['TokenMin']
+                token_max = rel_parts[rel_id]['TokenMax']
+                token_start, token_end = token_boundary_random(token_min, token_max, word_crop, words_len)
+                x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, x1_rel_focus = relation_sample(rel_id, token_start, token_end, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
                 x_words_pad.append(x1_words_pad)
                 x_words_rand.append(x1_words_rand)
                 x_skipgram.append(x1_skipgram)
@@ -170,6 +199,79 @@ def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, 
                 'x_rel_types': np.asarray(x_rel_types, dtype=np.float32),
                 'x_rel_senses': np.asarray(x_rel_senses, dtype=np.float32),
             }
+
+
+class SenseValidation(Callback):
+    """Discourse relation sense validation."""
+
+    def __init__(self, word_crop, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, relations_gold, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
+        super(SenseValidation, self).__init__()
+        self.word_crop = word_crop
+        self.max_len = max_len
+        self.doc_ids = doc_ids
+        self.words = words
+        self.word_metas = word_metas
+        self.pos_tags = pos_tags
+        self.dependencies = dependencies
+        self.parsetrees = parsetrees
+        self.rel_ids = rel_ids
+        self.rel_parts = rel_parts
+        self.rel_types = rel_types
+        self.rel_senses = rel_senses
+        self.words2id = words2id
+        self.words2id_size = words2id_size
+        self.pos_tags2id = pos_tags2id
+        self.pos_tags2id_size = pos_tags2id_size
+        self.rel_types2id = rel_types2id
+        self.rel_types2id_size = rel_types2id_size
+        self.rel_senses2id = rel_senses2id
+        self.rel_senses2id_size = rel_senses2id_size
+        self.rel_marking2id = rel_marking2id
+        self.rel_marking2id_size = rel_marking2id_size
+
+    def on_epoch_end(self, epoch, logs={}):
+        #XXX: experiment to detect overfitting
+        rel_types_matches = 0
+        rel_senses_matches = 0
+        for rel_id in self.rel_ids:
+            # prepare each relation sample separately
+            doc_id = self.rel_parts[rel_id]['DocID']
+            words_len = len(self.words[doc_id])
+            token_min = self.rel_parts[rel_id]['TokenMin']
+            token_max = self.rel_parts[rel_id]['TokenMax']
+            token_start, token_end = token_boundary_equal(token_min, token_max, self.word_crop, words_len)
+            x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, x1_rel_focus = relation_sample(rel_id, token_start, token_end, self.max_len, self.doc_ids, self.words, self.word_metas, self.pos_tags, self.dependencies, self.parsetrees, self.rel_ids, self.rel_parts, self.rel_types, self.rel_senses, self.words2id, self.words2id_size, self.pos_tags2id, self.pos_tags2id_size, self.rel_types2id, self.rel_types2id_size, self.rel_senses2id, self.rel_senses2id_size, self.rel_marking2id, self.rel_marking2id_size)
+
+            # predict
+            y = self.model.predict({
+                'x_words_pad': np.asarray([x1_words_pad], dtype=np.int),
+                #'x_words_rand': np.asarray([x1_words_rand], dtype=np.int),
+                'x_rel_focus': np.asarray([x1_rel_focus], dtype=np.float32),
+                #'x_skipgram': np.asarray([x1_skipgram], dtype=np.float32),
+                #'x_pos_tags': np.asarray([x1_pos_tags], dtype=np.float32),
+                #'x_rel_types': np.asarray([x1_rel_types], dtype=np.float32),
+                #'x_rel_senses': np.asarray([x1_rel_senses], dtype=np.float32),
+            })
+
+            # evaluate
+            if 'x_rel_types' in y:
+                rel_type, rel_type_totals = decode_x_rel_types(y['x_rel_types'][0], range(token_start, token_end), self.rel_parts[rel_id], self.rel_types2id, self.rel_types2id_size)
+                if rel_type == self.rel_types[rel_id]:
+                    rel_types_matches += 1
+
+            if 'x_rel_senses' in y:
+                rel_sense, rel_sense_totals = decode_x_rel_senses(y['x_rel_senses'][0], range(token_start, token_end), self.rel_parts[rel_id], self.rel_senses2id, self.rel_senses2id_size)
+                if rel_sense == self.rel_senses[rel_id]:
+                    rel_senses_matches += 1
+
+            #if valid_rel_types[rel_id] != rel_type:
+            #    np.set_printoptions(precision=2, suppress=True)
+            #    print rel_id, valid_rel_types[rel_id], rel_type, rel_type_totals
+                # print (np.repeat(x1_rel_focus, 5).reshape(102,5)) * y['x_rel_types'][0]
+                # print (1 - np.repeat(x1_rel_focus, 5).reshape(102,5)) * y['x_rel_types'][0]
+                # print x1_rel_types
+
+        print len(self.rel_ids), rel_types_matches, rel_senses_matches
 
 
 ### Tests
