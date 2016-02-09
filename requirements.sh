@@ -37,6 +37,7 @@ pip install git+https://github.com/Theano/Theano.git
 pip install pydot-ng
 pip install git+https://github.com/fchollet/keras.git
 pip install pyparsing
+pip install matplotlib
 
 # Development
 pip install pytest

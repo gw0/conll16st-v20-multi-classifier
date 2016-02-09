@@ -87,6 +87,8 @@ max_len = word_crop + max(abs(min(skipgram_offsets)), abs(max(skipgram_offsets))
 console_log = "{}/console.log".format(args.experiment_dir)
 model_yaml = "{}/model.yaml".format(args.experiment_dir)
 model_png = "{}/model.png".format(args.experiment_dir)
+metrics_csv = "{}/metrics.csv".format(args.experiment_dir)
+metrics_png = "{}/metrics.png".format(args.experiment_dir)
 weights_hdf5 = "{}/weights.hdf5".format(args.experiment_dir)
 words2id_pkl = "{}/words2id.pkl".format(args.experiment_dir)
 pos_tags2id_pkl = "{}/pos_tags2id.pkl".format(args.experiment_dir)
@@ -174,12 +176,119 @@ else:
     log.info("load previous model ({})".format(args.experiment_dir))
     model.load_weights(weights_hdf5)
 
+#XXX
+import csv
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator, MultipleLocator, LogLocator, ScalarFormatter
+from keras.callbacks import History
+
+class CSVHistory(History):
+    """Callback to store metrics in CSV file."""
+
+    def __init__(self, metrics_csv, fieldnames=None, others=None):
+        super(CSVHistory, self).__init__()
+        if fieldnames is None:
+            fieldnames = ['epoch', 'loss', 'val_loss']
+        if others is None:
+            others = {}
+
+        self.metrics_csv = metrics_csv
+        self.fieldnames = fieldnames
+        self.others = others
+
+    def on_train_begin(self, logs={}):
+        super(CSVHistory, self).on_train_begin(logs=logs)
+        try:
+            self.load_csv()
+        except IOError:
+            pass
+
+    def on_epoch_end(self, epoch, logs={}):
+        super(CSVHistory, self).on_epoch_end(epoch, logs=logs)
+        self.save_csv()
+
+    def load_csv(self):
+        f = open(self.metrics_csv, 'rb')
+        freader = csv.DictReader(f, delimiter='\t', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        self.history = {}
+        for row in freader:
+            for k, v in row.items():
+                if k == 'epoch':  # load epoch numbers
+                    self.epoch.append(v)
+                elif k in self.others:  # skip other fields
+                    pass
+                else:  # load metrics
+                    if k not in self.history:
+                        self.history[k] = []
+                    self.history[k].append(v)
+        f.close()
+
+    def save_csv(self):
+        f = open(self.metrics_csv, 'wb')
+        fwriter = csv.DictWriter(f, fieldnames=self.fieldnames, delimiter='\t', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        fwriter.writeheader()
+        for i in range(len(self.epoch)):
+            row = {}
+            for k in self.fieldnames:
+                if k == 'epoch':  # save epoch numbers
+                    row[k] = self.epoch[i]
+                elif k in self.others:  # save other fields
+                    row[k] = self.others[k]
+                elif k in self.history:  # save metrics
+                    row[k] = self.history[k][i]
+            fwriter.writerow(row)
+        f.close()
+
+
+class PlotHistory(CSVHistory):
+    """Callback to plot metrics and store them in CSV file."""
+
+    def __init__(self, metrics_png, metrics_csv, fieldnames=None, others=None):
+        super(PlotHistory, self).__init__(metrics_csv, fieldnames=fieldnames, others=others)
+
+        self.metrics_png = metrics_png
+
+    def on_epoch_end(self, epoch, logs={}):
+        super(PlotHistory, self).on_epoch_end(epoch, logs=logs)
+        self.save_png()
+
+    def save_png(self):
+        fig, ax = plt.subplots()
+
+        x = range(len(self.epoch))
+        for k in self.fieldnames:
+            if k in self.history:
+                if k == 'loss':  #XXX: hack for loss
+                    plt.plot(x, [ (y / self.history[k][0]) for y in self.history[k] ], label=k)
+                else:
+                    plt.plot(x, self.history[k], label=k)
+
+        plt.title(self.others['experiment'])  #XXX
+        plt.xlabel('epochs')
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.xaxis.set_minor_locator(MultipleLocator(base=10))
+        plt.ylim(ymin=0.)
+        ax.yaxis.set_minor_locator(MultipleLocator(base=0.05))
+        #plt.yscale('log')
+        #plt.ylim(ymin=0.1)
+        #ax.yaxis.set_major_locator(LogLocator(base=2.))
+        #ax.yaxis.set_major_formatter(ScalarFormatter())
+        plt.grid(True)
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+        plt.tight_layout()
+        plt.savefig(self.metrics_png, bbox_inches='tight', dpi=100)
+        plt.close()
+
+
 # train model
 log.info("train model")
 train_iter = batch_generator(word_crop, max_len, batch_size, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
 callbacks = [
     SenseValidation("", word_crop, max_len, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, train_relations_gold, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
     SenseValidation("val_", word_crop, max_len, valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
+    #CSVHistory(metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_types', 'rel_senses', 'val_rel_types', 'val_rel_senses'], others={"experiment": args.experiment_dir}),
+    PlotHistory(metrics_png, metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_types', 'rel_senses', 'val_rel_types', 'val_rel_senses'], others={"experiment": args.experiment_dir}),
     ModelCheckpoint(monitor='loss_avg', mode='min', filepath=weights_hdf5, save_best_only=True),
     #EarlyStopping(monitor='avg_loss', mode='min', patience=100),
 ]
