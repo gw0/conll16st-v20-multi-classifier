@@ -206,8 +206,9 @@ def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, 
 class SenseValidation(Callback):
     """Discourse relation sense validation."""
 
-    def __init__(self, word_crop, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, relations_gold, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
+    def __init__(self, prefix, word_crop, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, relations_gold, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
         super(SenseValidation, self).__init__()
+        self.prefix = prefix
         self.word_crop = word_crop
         self.max_len = max_len
         self.doc_ids = doc_ids
@@ -232,9 +233,8 @@ class SenseValidation(Callback):
         self.rel_marking2id_size = rel_marking2id_size
 
     def on_epoch_end(self, epoch, logs={}):
-        #XXX: experiment to detect overfitting
-        rel_types_matches = 0
-        rel_senses_matches = 0
+        rel_types_matching = 0
+        rel_senses_matching = 0
         for rel_id in self.rel_ids:
             # prepare each relation sample separately
             doc_id = self.rel_parts[rel_id]['DocID']
@@ -259,12 +259,12 @@ class SenseValidation(Callback):
             if 'x_rel_types' in y:
                 rel_type, rel_type_totals = decode_x_rel_types(y['x_rel_types'][0], range(token_start, token_end), self.rel_parts[rel_id], self.rel_types2id, self.rel_types2id_size)
                 if rel_type == self.rel_types[rel_id]:
-                    rel_types_matches += 1
+                    rel_types_matching += 1
 
             if 'x_rel_senses' in y:
                 rel_sense, rel_sense_totals = decode_x_rel_senses(y['x_rel_senses'][0], range(token_start, token_end), self.rel_parts[rel_id], self.rel_senses2id, self.rel_senses2id_size)
                 if rel_sense == self.rel_senses[rel_id]:
-                    rel_senses_matches += 1
+                    rel_senses_matching += 1
 
             #if valid_rel_types[rel_id] != rel_type:
             #    np.set_printoptions(precision=2, suppress=True)
@@ -273,7 +273,9 @@ class SenseValidation(Callback):
                 # print (1 - np.repeat(x1_rel_focus, 5).reshape(102,5)) * y['x_rel_types'][0]
                 # print x1_rel_types
 
-        print len(self.rel_ids), rel_types_matches, rel_senses_matches
+        print len(self.rel_ids), rel_types_matching, rel_senses_matching
+        logs[self.prefix + 'rel_types'] = float(rel_types_matching) / len(self.rel_ids)
+        logs[self.prefix + 'rel_senses'] = float(rel_senses_matching) / len(self.rel_ids)
 
 
 ### Tests
