@@ -8,8 +8,10 @@ __author__ = "GW [http://gw.tnode.com/] <gw.2016@tnode.com>"
 __license__ = "GPLv3+"
 
 import argparse
+import codecs
 import logging
 import os
+import sys
 from keras import backend as K
 from keras.utils.visualize_util import plot
 from keras.callbacks import ModelCheckpoint, EarlyStopping
@@ -25,6 +27,21 @@ from model import build_model, batch_generator, SenseValidation
 
 
 # logging
+class Tee(object):
+    """For redirecting output to console and log files."""
+    def __init__(self, *files):
+        self.files = list(files)
+    def write(self, obj):
+        sys.stdout.flush()
+        for f in self.files:
+            f.write(obj)
+            f.flush()
+    def flush(self) :
+        for f in self.files:
+            f.flush()
+sys.stdout = Tee(sys.stdout)
+sys.stderr = Tee(sys.stderr)
+
 logging.basicConfig(format="[%(asctime)s] %(message)s", datefmt="%Y-%m-%d %H:%M", level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
@@ -33,7 +50,6 @@ def debugger(type, value, tb):
     import traceback, pdb
     traceback.print_exception(type, value, tb)
     pdb.pm()
-import sys
 sys.excepthook = debugger
 
 # parse arguments
@@ -84,9 +100,9 @@ if args.clean and os.path.isdir(args.experiment_dir):
     shutil.rmtree(args.experiment_dir)
 if not os.path.isdir(args.experiment_dir):
     os.makedirs(args.experiment_dir)
-log_fh = logging.FileHandler(console_log, mode='a', encoding='utf8')
-log_fh.setFormatter(logging.root.handlers[0].formatter)
-logging.root.addHandler(log_fh)
+f_log = codecs.open(console_log, mode='a', encoding='utf8')
+sys.stdout.files.append(f_log)
+sys.stderr.files.append(f_log)
 
 log.info("configuration ({})".format(args.experiment_dir))
 for var in ['args.experiment_dir', 'args.train_dir', 'args.valid_dir', 'args.test_dir', 'args.output_dir', 'K._config', 'os.getenv("THEANO_FLAGS")', 'epochs', 'batch_size', 'word_crop', 'embedding_dim', 'dropout_p', 'words2id_size', 'skipgram_window_size', 'skipgram_negative_samples', 'skipgram_offsets', 'filter_types', 'filter_senses', 'max_len']:
