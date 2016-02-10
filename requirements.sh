@@ -32,7 +32,7 @@ sudo apt-get install -y python-h5py libyaml-dev graphviz
 [ ! -d $SITE_PACKAGES/h5py ] && cp -a $DIST_PACKAGES/h5py* $SITE_PACKAGES
 
 # Prerequisites for matplotlib
-sudo aptitude install libpng-dev libfreetype6-dev
+sudo apt-get install -y pkg-config libpng-dev libfreetype6-dev
 
 # Requirements
 pip install git+https://github.com/Theano/Theano.git
