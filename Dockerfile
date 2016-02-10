@@ -2,10 +2,10 @@
 #
 # Example:
 #   DATAT=en-train DATAV=en-dev DATAX=en-trial
-#   DATAT=en-dev DATAV=en-dev DATAX=en-trial
+#   DATAT=en-dev DATAV=en-trial DATAX=en-trial
 #   DATAT=zh-train DATAV=zh-dev DATAX=zh-trial
-#   DATAT=zh-dev DATAV=zh-dev DATAX=zh-trial
-#   NAME=conll16st-v20-09
+#   DATAT=zh-dev DATAV=zh-trial DATAX=zh-trial
+#   NAME=conll16st-v20-11
 #   docker build -t $NAME .
 #   docker run -d -v /srv/storage/conll16st:/srv/ex --name $NAME-$DATAT $NAME ex/$NAME-$DATAT conll16st-$DATAT conll16st-$DATAV conll16st-$DATAX ex/$NAME-$DATAT --clean
 #   docker logs -f $NAME-$DATAT

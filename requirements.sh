@@ -31,6 +31,9 @@ sudo apt-get install -y python-numpy python-scipy
 sudo apt-get install -y python-h5py libyaml-dev graphviz
 [ ! -d $SITE_PACKAGES/h5py ] && cp -a $DIST_PACKAGES/h5py* $SITE_PACKAGES
 
+# Prerequisites for matplotlib
+sudo aptitude install libpng-dev libfreetype6-dev
+
 # Requirements
 pip install git+https://github.com/Theano/Theano.git
 #pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.6.0-cp27-none-linux_x86_64.whl

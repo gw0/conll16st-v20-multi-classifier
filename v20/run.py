@@ -73,7 +73,7 @@ epochs = 10000
 batch_size = 10
 
 word_crop = 100  #= max([ len(s) for s in train_words ])
-embedding_dim = 20  #20
+embedding_dim = 40  #40
 dropout_p = 0.5  #0.5
 words2id_size = 50000  #= None is computed
 skipgram_window_size = 4
@@ -183,7 +183,13 @@ from matplotlib.ticker import MaxNLocator, MultipleLocator, LogLocator, ScalarFo
 from keras.callbacks import History
 
 class CSVHistory(History):
-    """Callback to store metrics in CSV file."""
+    '''Callback to store history metrics in CSV file.
+
+    # Arguments
+        metrics_csv: string, path to save the CSV file.
+        fieldnames: list of fields/columns to store in CSV file.
+        others: optional dictionary for fields with static values.
+    '''
 
     def __init__(self, metrics_csv, fieldnames=None, others=None):
         super(CSVHistory, self).__init__()
@@ -239,7 +245,6 @@ class CSVHistory(History):
             fwriter.writerow(row)
         f.close()
 
-
 class PlotHistory(CSVHistory):
     """Callback to plot metrics and store them in CSV file."""
 
@@ -289,8 +294,9 @@ callbacks = [
     SenseValidation("val_", word_crop, max_len, valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
     #CSVHistory(metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_types', 'rel_senses', 'val_rel_types', 'val_rel_senses'], others={"experiment": args.experiment_dir}),
     PlotHistory(metrics_png, metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_types', 'rel_senses', 'val_rel_types', 'val_rel_senses'], others={"experiment": args.experiment_dir}),
-    ModelCheckpoint(monitor='loss_avg', mode='min', filepath=weights_hdf5, save_best_only=True),
-    #EarlyStopping(monitor='avg_loss', mode='min', patience=100),
+    ModelCheckpoint(filepath=weights_hdf5),
+    #ModelCheckpoint(monitor='loss', mode='min', filepath=weights_hdf5, save_best_only=True),
+    #EarlyStopping(monitor='loss', mode='min', patience=100),
 ]
 model.fit_generator(train_iter, nb_epoch=epochs, samples_per_epoch=len(train_rel_ids), callbacks=callbacks)
 

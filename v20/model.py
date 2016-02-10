@@ -13,7 +13,7 @@ from keras.models import make_batches
 from keras.models import Graph
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import GRU
-from keras.layers.core import TimeDistributedDense, Reshape, Dropout, Reshape
+from keras.layers.core import Activation, Dropout, TimeDistributedDense, Reshape
 from keras.layers.noise import GaussianDropout
 from keras.callbacks import Callback
 
@@ -46,12 +46,12 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, pos_tags2id_si
         model.add_input(name='x_words_rand', input_shape=(max_len,), dtype='int')
 
     # input: discourse relation focus marking (doc, time_pad)
-    if 'x_rel_types' in loss or 'x_rel_senses' in loss:
-        model.add_input(name='x_rel_focus', input_shape=(max_len,))
-        model.add_node(Reshape((max_len, 1)), name='rel_focus_1', input='x_rel_focus')
+    model.add_input(name='x_rel_focus', input_shape=(max_len,))
 
-    # shared 1: word embedding layer (doc, time_pad, emb)
-    model.add_node(Embedding(words2id_size, embedding_dim, input_length=max_len, init='glorot_uniform', mask_zero=True), name='shared_1', input='x_words_pad')
+    # shared 1: word embedding layer + focus (doc, time_pad, emb + 1)
+    model.add_node(Embedding(words2id_size, embedding_dim, input_length=max_len, init='glorot_uniform', mask_zero=True), name='embedding', input='x_words_pad')
+    model.add_node(Reshape((max_len, 1)), name='rel_focus_1', input='x_rel_focus')
+    model.add_node(Activation('linear'), name='shared_1', inputs=['embedding', 'rel_focus_1'], merge_mode='concat')
 
     # shared N: bidirectional GRU full sequence layer (doc, time_pad, repr)
     shared_prev = 'shared_1'
@@ -65,7 +65,7 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, pos_tags2id_si
         shared_drop = 'shared_{}'.format(n)
         model.add_node(GRU(embedding_dim, return_sequences=True, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal'), name=shared_fwd, input=shared_prev)
         model.add_node(GRU(embedding_dim, return_sequences=True, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal', go_backwards=True), name=shared_bck, input=shared_prev)
-        model.add_node(TimeDistributedDense(embedding_dim, init='he_uniform'), name=shared_join, inputs=[shared_prev, shared_fwd, shared_bck, 'rel_focus_1'], merge_mode='concat')
+        model.add_node(TimeDistributedDense(embedding_dim, init='he_uniform'), name=shared_join, inputs=[shared_prev, shared_fwd, shared_bck], merge_mode='concat')
         if dropout_p > 0.:
             model.add_node(Dropout(dropout_p), name=shared_drop, input=shared_join)
             #model.add_node(GaussianDropout(dropout_p), name=shared_drop, input=shared_join)
