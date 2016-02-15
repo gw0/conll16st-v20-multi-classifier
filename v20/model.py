@@ -18,6 +18,7 @@ from keras.layers.noise import GaussianDropout
 from keras.callbacks import Callback
 
 from tasks.words import encode_x_words, encode_x_words_rand
+from tasks.skipgram import skipgram_model, encode_x1_skipgram
 from tasks.pos_tags import pos_tags_model, encode_x_pos_tags
 from tasks.rel_types import rel_types_model, encode_x_rel_types, decode_x_rel_types
 from tasks.rel_senses import rel_senses_model, encode_x_rel_senses, decode_x_rel_senses
@@ -27,12 +28,12 @@ from conll16st.relations import rtsip_to_tag
 
 ### Model
 
-def build_model(max_len, embedding_dim, dropout_p, words2id_size, pos_tags2id_size, rel_types2id_size, rel_senses2id_size, rel_marking2id_size):
+def build_model(max_len, embedding_dim, dropout_p, words2id_size, skipgram_offsets, pos_tags2id_size, rel_types2id_size, rel_senses2id_size, rel_marking2id_size):
 
     model = Graph()
     shared_layers = 2
     loss = {
-        #'x_skipgram': 'mse',
+        'x_skipgram': 'mse',
         #'x_pos_tags': 'binary_crossentropy',
         #'x_rel_types': 'binary_crossentropy',
         'x_rel_senses': 'binary_crossentropy',
@@ -73,7 +74,7 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, pos_tags2id_si
 
     # model: skip-gram labels (sample, time_pad, offset)
     if 'x_skipgram' in loss:
-        skipgram_out = None  #XXX:skipgram_model(model, ['shared_1', 'x_words_rand'], max_len, embedding_dim, words2id_size, skipgram_offsets)
+        skipgram_out = skipgram_model(model, ['embedding', 'x_words_rand'], max_len, embedding_dim, words2id_size, skipgram_offsets)
         model.add_output(name='x_skipgram', input=skipgram_out)
 
     # model: POS tags as one-hot vectors (sample, time_pad, pos_tags2id)
@@ -137,7 +138,7 @@ def token_boundary_random(token_min, token_max, word_crop, words_len, padding_pr
     return token_start, token_end
 
 
-def relation_sample(rel_id, token_start, token_end, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
+def relation_sample(rel_id, token_start, token_end, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
     doc_id = rel_parts[rel_id]['DocID']
     rel_tag = rtsip_to_tag(rel_types[rel_id], rel_senses[rel_id], rel_id, "")
 
@@ -146,7 +147,7 @@ def relation_sample(rel_id, token_start, token_end, max_len, doc_ids, words, wor
     x1_words_pad = encode_x_words(words_slice, words2id, words2id_size, max_len)
     x1_words_rand = encode_x_words_rand(words_slice, words2id, words2id_size, max_len)
 
-    x1_skipgram = None
+    x1_skipgram = encode_x1_skipgram(x1_words_pad, skipgram_offsets, max_len)
 
     pos_tags_slice = pos_tags[doc_id][token_start:token_end]
     x1_pos_tags = encode_x_pos_tags(pos_tags_slice, pos_tags2id, pos_tags2id_size, max_len)
@@ -158,7 +159,7 @@ def relation_sample(rel_id, token_start, token_end, max_len, doc_ids, words, wor
     return x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, x1_rel_focus
 
 
-def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
+def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
     """Batch generator where each sample represents a different discourse relation."""
 
     rel_ids = list(rel_ids)  # copy list
@@ -182,7 +183,7 @@ def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, 
                 token_min = rel_parts[rel_id]['TokenMin']
                 token_max = rel_parts[rel_id]['TokenMax']
                 token_start, token_end = token_boundary_random(token_min, token_max, word_crop, words_len)
-                x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, x1_rel_focus = relation_sample(rel_id, token_start, token_end, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
+                x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, x1_rel_focus = relation_sample(rel_id, token_start, token_end, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
                 x_words_pad.append(x1_words_pad)
                 x_words_rand.append(x1_words_rand)
                 x_skipgram.append(x1_skipgram)
@@ -194,9 +195,9 @@ def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, 
             # yield batch
             yield {
                 'x_words_pad': np.asarray(x_words_pad, dtype=np.int),
-                #'x_words_rand': np.asarray(x_words_rand, dtype=np.int),
+                'x_words_rand': np.asarray(x_words_rand, dtype=np.int),
                 'x_rel_focus': np.asarray(x_rel_focus, dtype=np.int),
-                #'x_skipgram': np.asarray(x_skipgram, dtype=np.float32),
+                'x_skipgram': np.asarray(x_skipgram, dtype=np.float32),
                 #'x_pos_tags': np.asarray(x_pos_tags, dtype=np.float32),
                 #'x_rel_types': np.asarray(x_rel_types, dtype=np.float32),
                 'x_rel_senses': np.asarray(x_rel_senses, dtype=np.float32),
@@ -206,7 +207,7 @@ def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, 
 class SenseValidation(Callback):
     """Discourse relation sense validation."""
 
-    def __init__(self, prefix, word_crop, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, relations_gold, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
+    def __init__(self, prefix, word_crop, max_len, doc_ids, words, word_metas, pos_tags, dependencies, parsetrees, rel_ids, rel_parts, rel_types, rel_senses, relations_gold, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size):
         super(SenseValidation, self).__init__()
         self.prefix = prefix
         self.word_crop = word_crop
@@ -223,6 +224,7 @@ class SenseValidation(Callback):
         self.rel_senses = rel_senses
         self.words2id = words2id
         self.words2id_size = words2id_size
+        self.skipgram_offsets = skipgram_offsets
         self.pos_tags2id = pos_tags2id
         self.pos_tags2id_size = pos_tags2id_size
         self.rel_types2id = rel_types2id
@@ -242,17 +244,13 @@ class SenseValidation(Callback):
             token_min = self.rel_parts[rel_id]['TokenMin']
             token_max = self.rel_parts[rel_id]['TokenMax']
             token_start, token_end = token_boundary_equal(token_min, token_max, self.word_crop, words_len)
-            x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, x1_rel_focus = relation_sample(rel_id, token_start, token_end, self.max_len, self.doc_ids, self.words, self.word_metas, self.pos_tags, self.dependencies, self.parsetrees, self.rel_ids, self.rel_parts, self.rel_types, self.rel_senses, self.words2id, self.words2id_size, self.pos_tags2id, self.pos_tags2id_size, self.rel_types2id, self.rel_types2id_size, self.rel_senses2id, self.rel_senses2id_size, self.rel_marking2id, self.rel_marking2id_size)
+            x1_words_pad, x1_words_rand, x1_skipgram, x1_pos_tags, x1_rel_types, x1_rel_senses, x1_rel_focus = relation_sample(rel_id, token_start, token_end, self.max_len, self.doc_ids, self.words, self.word_metas, self.pos_tags, self.dependencies, self.parsetrees, self.rel_ids, self.rel_parts, self.rel_types, self.rel_senses, self.words2id, self.words2id_size, self.skipgram_offsets, self.pos_tags2id, self.pos_tags2id_size, self.rel_types2id, self.rel_types2id_size, self.rel_senses2id, self.rel_senses2id_size, self.rel_marking2id, self.rel_marking2id_size)
 
             # predict
             y = self.model.predict({
                 'x_words_pad': np.asarray([x1_words_pad], dtype=np.int),
-                #'x_words_rand': np.asarray([x1_words_rand], dtype=np.int),
+                'x_words_rand': np.asarray([x1_words_rand], dtype=np.int),
                 'x_rel_focus': np.asarray([x1_rel_focus], dtype=np.float32),
-                #'x_skipgram': np.asarray([x1_skipgram], dtype=np.float32),
-                #'x_pos_tags': np.asarray([x1_pos_tags], dtype=np.float32),
-                #'x_rel_types': np.asarray([x1_rel_types], dtype=np.float32),
-                #'x_rel_senses': np.asarray([x1_rel_senses], dtype=np.float32),
             })
 
             # evaluate

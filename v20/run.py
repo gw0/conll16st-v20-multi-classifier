@@ -177,7 +177,7 @@ rel_types2id[None] = []
 
 # build model
 log.info("build model")
-model = build_model(max_len, embedding_dim, dropout_p, words2id_size, pos_tags2id_size, rel_types2id_size, rel_senses2id_size, rel_marking2id_size)
+model = build_model(max_len, embedding_dim, dropout_p, words2id_size, skipgram_offsets, pos_tags2id_size, rel_types2id_size, rel_senses2id_size, rel_marking2id_size)
 
 # plot model
 with open(model_yaml, 'w') as f:
@@ -303,10 +303,10 @@ class PlotHistory(CSVHistory):
 
 # train model
 log.info("train model")
-train_iter = batch_generator(word_crop, max_len, batch_size, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
+train_iter = batch_generator(word_crop, max_len, batch_size, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
 callbacks = [
-    SenseValidation("", word_crop, max_len, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, train_relations_gold, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
-    SenseValidation("val_", word_crop, max_len, valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold, words2id, words2id_size, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
+    SenseValidation("", word_crop, max_len, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, train_relations_gold, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
+    SenseValidation("val_", word_crop, max_len, valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
     #CSVHistory(metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_types', 'rel_senses', 'val_rel_types', 'val_rel_senses'], others={"experiment": args.experiment_dir}),
     PlotHistory(metrics_png, metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_types', 'rel_senses', 'val_rel_types', 'val_rel_senses'], others={"experiment": args.experiment_dir}),
     ModelCheckpoint(filepath=weights_hdf5),
