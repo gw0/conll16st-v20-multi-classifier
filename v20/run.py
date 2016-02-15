@@ -29,18 +29,33 @@ from model import build_model, batch_generator, SenseValidation
 # logging
 class Tee(object):
     """For redirecting output to console and log files."""
-    def __init__(self, *files):
+
+    def __init__(self, direct=[], files=[]):
+        self.direct = list(direct)
         self.files = list(files)
+        self.buf = ""
+
     def write(self, obj):
-        sys.stdout.flush()
-        for f in self.files:
+        # direct output
+        for f in self.direct:
             f.write(obj)
-            f.flush()
+
+        # buffered line output to files
+        self.buf += obj
+        line = ""
+        for line in self.buf.splitlines(True):
+            if line.endswith("\n"):  # write only whole lines
+                for f in self.files:
+                    f.write(line)
+                line = ""
+        self.buf = line  # preserve last unflushed line
+
     def flush(self) :
-        for f in self.files:
+        for f in self.direct + self.files:
             f.flush()
-sys.stdout = Tee(sys.stdout)
-sys.stderr = Tee(sys.stderr)
+
+sys.stdout = Tee([sys.stdout])
+sys.stderr = Tee([sys.stderr])
 
 logging.basicConfig(format="[%(asctime)s] %(message)s", datefmt="%Y-%m-%d %H:%M", level=logging.DEBUG)
 log = logging.getLogger(__name__)
