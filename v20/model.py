@@ -34,8 +34,8 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, skipgram_offse
     shared_layers = 2
     loss = {
         'x_skipgram': 'mse',
-        #'x_pos_tags': 'binary_crossentropy',
-        #'x_rel_types': 'binary_crossentropy',
+        'x_pos_tags': 'binary_crossentropy',
+        'x_rel_types': 'binary_crossentropy',
         'x_rel_senses': 'binary_crossentropy',
     }
 
@@ -198,8 +198,8 @@ def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, 
                 'x_words_rand': np.asarray(x_words_rand, dtype=np.int),
                 'x_rel_focus': np.asarray(x_rel_focus, dtype=np.int),
                 'x_skipgram': np.asarray(x_skipgram, dtype=np.float32),
-                #'x_pos_tags': np.asarray(x_pos_tags, dtype=np.float32),
-                #'x_rel_types': np.asarray(x_rel_types, dtype=np.float32),
+                'x_pos_tags': np.asarray(x_pos_tags, dtype=np.float32),
+                'x_rel_types': np.asarray(x_rel_types, dtype=np.float32),
                 'x_rel_senses': np.asarray(x_rel_senses, dtype=np.float32),
             }
 

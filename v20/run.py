@@ -88,11 +88,11 @@ epochs = 10000
 batch_size = 10
 
 word_crop = 100  #= max([ len(s) for s in train_words ])
-embedding_dim = 40  #40
-dropout_p = 0.5  #0.5
+embedding_dim = 40  #= 40
+dropout_p = 0.5  #= 0.5
 words2id_size = 50000  #= None is computed
-skipgram_window_size = 4
-skipgram_negative_samples = 4  #skipgram_window_size
+skipgram_window_size = 10
+skipgram_negative_samples = skipgram_window_size  #= skipgram_window_size
 skipgram_offsets = conv_window_to_offsets(skipgram_window_size, skipgram_negative_samples, word_crop)
 filter_types = None  #["Explicit"]
 filter_senses = None  #["Contingency.Condition"]
