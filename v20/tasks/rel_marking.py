@@ -31,7 +31,7 @@ def rel_marking_model(model, ins, max_len, embedding_dim, rel_marking2id_size, p
 def build_rel_marking2id(mode='IO'):
     """Build vocabulary index for all discourse relation boundary marking (reserved ids: 0 = other)."""
 
-    if mode == 'IOBES':
+    if mode == 'IOBES-part':
         rel_marking2id = {
             "O": [0],
             "B-Arg1": [1],
@@ -51,7 +51,7 @@ def build_rel_marking2id(mode='IO'):
             "E-Punctuation": [15],
             "S-Punctuation": [16],
         }
-    elif mode == 'IO':
+    elif mode == 'IO-part':
         rel_marking2id = {
             "O": [0],
             "B-Arg1": [1],
@@ -91,6 +91,8 @@ def build_rel_marking2id(mode='IO'):
             "E-Punctuation": [0],
             "S-Punctuation": [0],
         }
+    else:  # invalid mode
+        return None, None
     rel_marking2id_size = max([ i  for l in rel_marking2id.values() for i in l ]) + 1
     return rel_marking2id, rel_marking2id_size
 
@@ -218,7 +220,6 @@ def test_encode_x1_rel_marking():
 
     x_3 = encode_x1_rel_focus(word_metas_slice, max_len_3, filter_prefixes=[tag])
     assert (x_3 == t_x_3).all()
-
 
 if __name__ == '__main__':
     import pytest

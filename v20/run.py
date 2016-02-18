@@ -162,7 +162,7 @@ if not all([ os.path.isfile(pkl) for pkl in [words2id_pkl, pos_tags2id_pkl, rel_
     pos_tags2id, pos_tags2id_size = save_to_pkl(pos_tags2id_pkl, build_pos_tags2id(train_pos_tags))
     rel_types2id, rel_types2id_size = save_to_pkl(rel_types2id_pkl, build_rel_types2id(train_rel_types))
     rel_senses2id, rel_senses2id_size = save_to_pkl(rel_senses2id_pkl, build_rel_senses2id(train_rel_senses))
-    rel_marking2id, rel_marking2id_size = save_to_pkl(rel_marking2id_pkl, build_rel_marking2id(mode='IO'))
+    rel_marking2id, rel_marking2id_size = save_to_pkl(rel_marking2id_pkl, build_rel_marking2id(mode='IO-part'))
 else:
     log.info("load previous indexes ({})".format(args.experiment_dir))
     words2id, words2id_size = load_from_pkl(words2id_pkl)
@@ -278,7 +278,7 @@ class PlotHistory(CSVHistory):
         x = range(len(self.epoch))
         for k in self.fieldnames:
             if k in self.history:
-                if k == 'loss':  #XXX: hack for loss
+                if k.endswith('loss'):  #XXX: hack for loss functions
                     plt.plot(x, [ (y / self.history[k][0]) for y in self.history[k] ], label=k)
                 else:
                     plt.plot(x, self.history[k], label=k)
@@ -308,7 +308,7 @@ callbacks = [
     SenseValidation("", word_crop, max_len, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, train_relations_gold, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
     SenseValidation("val_", word_crop, max_len, valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
     #CSVHistory(metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_types', 'rel_senses', 'val_rel_types', 'val_rel_senses'], others={"experiment": args.experiment_dir}),
-    PlotHistory(metrics_png, metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_types', 'rel_senses', 'rel_senses_one', 'val_rel_types', 'val_rel_senses', 'val_rel_senses_one'], others={"experiment": args.experiment_dir}),
+    PlotHistory(metrics_png, metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_marking_loss', 'rel_types', 'rel_senses', 'rel_senses_one', 'val_rel_types', 'val_rel_senses', 'val_rel_senses_one'], others={"experiment": args.experiment_dir}),
     ModelCheckpoint(filepath=weights_hdf5),
     #ModelCheckpoint(monitor='loss', mode='min', filepath=weights_hdf5, save_best_only=True),
     #EarlyStopping(monitor='loss', mode='min', patience=100),
