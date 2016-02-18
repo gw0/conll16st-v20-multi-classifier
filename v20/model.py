@@ -11,9 +11,10 @@ import random
 import numpy as np
 from keras.models import make_batches
 from keras.models import Graph
+from keras.layers.core import Activation, Dropout, TimeDistributedDense, Reshape
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import GRU
-from keras.layers.core import Activation, Dropout, TimeDistributedDense, Reshape
+from keras.layers.normalization import BatchNormalization
 from keras.layers.noise import GaussianDropout
 from keras.callbacks import Callback
 
@@ -61,16 +62,17 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, skipgram_offse
     for n in range(2, shared_layers + 1):
         shared_fwd = 'shared_{}_fwd'.format(n)
         shared_bck = 'shared_{}_bck'.format(n)
-        if dropout_p > 0.:
-            shared_join = 'shared_{}_join'.format(n)
-        else:
-            shared_join = 'shared_{}'.format(n)
+        shared_join = 'shared_{}_join'.format(n)
+        shared_norm = 'shared_{}_norm'.format(n)
         shared_drop = 'shared_{}'.format(n)
+        if dropout_p <= 0.:
+            shared_norm = shared_drop
         model.add_node(GRU(embedding_dim, return_sequences=True, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal'), name=shared_fwd, input=shared_prev)
         model.add_node(GRU(embedding_dim, return_sequences=True, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal', go_backwards=True), name=shared_bck, input=shared_prev)
         model.add_node(TimeDistributedDense(embedding_dim, init='he_uniform'), name=shared_join, inputs=[shared_prev, shared_fwd, shared_bck], merge_mode='concat')
+        model.add_node(BatchNormalization(mode=0, axis=2), name=shared_norm, input=shared_join)
         if dropout_p > 0.:
-            model.add_node(Dropout(dropout_p), name=shared_drop, input=shared_join)
+            model.add_node(Dropout(dropout_p), name=shared_drop, input=shared_norm)
             #model.add_node(GaussianDropout(dropout_p), name=shared_drop, input=shared_join)
         shared_prev = shared_drop
 
@@ -302,7 +304,7 @@ class SenseValidation(Callback):
                 # print (1 - np.repeat(x1_rel_focus, 5).reshape(102,5)) * y['x_rel_types'][0]
                 # print x1_rel_types
 
-        print len(self.rel_ids), rel_types_matching, rel_senses_matching, rel_senses_one_matching
+        print "\n", len(self.rel_ids), rel_types_matching, rel_senses_matching, rel_senses_one_matching
         #, "{:.4f}".format(rel_marking_loss)
         #logs[self.prefix + 'rel_marking_loss'] = rel_marking_loss
         logs[self.prefix + 'rel_types'] = float(rel_types_matching) / len(self.rel_ids)
