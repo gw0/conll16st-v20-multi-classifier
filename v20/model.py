@@ -35,11 +35,11 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, skipgram_offse
     shared_layers = 2
     loss = {
         #'x_skipgram': 'mse',
-        'x_pos_tags': 'binary_crossentropy',
-        'x_rel_marking': 'binary_crossentropy',
-        #'x_rel_types': 'binary_crossentropy',
-        #'x_rel_senses': 'binary_crossentropy',
-        'x_rel_senses_one': 'binary_crossentropy',
+        'x_pos_tags': 'categorical_crossentropy',
+        'x_rel_marking': 'categorical_crossentropy',
+        #'x_rel_types': 'categorical_crossentropy',
+        #'x_rel_senses': 'categorical_crossentropy',
+        'x_rel_senses_one': 'categorical_crossentropy',
     }
 
     # input: word ids with masked post-padding (doc, time_pad)
