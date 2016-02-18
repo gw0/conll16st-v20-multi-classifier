@@ -11,6 +11,7 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import numpy as np
 from keras.layers.core import Activation, TimeDistributedDense, RepeatVector, Permute
+from keras.layers.recurrent import GRU
 
 from common import build_index
 from conll16st.relations import tag_to_rtsip, filter_tags
@@ -21,7 +22,7 @@ from conll16st.relations import tag_to_rtsip, filter_tags
 def rel_senses_model(model, ins, max_len, embedding_dim, rel_senses2id_size, focus, pre='rsenses'):
     """Discourse relation senses model as Keras Graph."""
 
-    # prepare focus dimensionality
+    # prepare focus dimensionality (sample, time_pad, rel_senses2id)
     model.add_node(RepeatVector(rel_senses2id_size), name=pre + '_focus_rep', input=focus)
     model.add_node(Permute((2, 1)), name=pre + '_focus', input=pre + '_focus_rep')
 
@@ -29,9 +30,17 @@ def rel_senses_model(model, ins, max_len, embedding_dim, rel_senses2id_size, foc
     model.add_node(TimeDistributedDense(rel_senses2id_size, init='he_uniform'), name=pre + '_dense', input=ins[0])
     model.add_node(Activation('softmax'), name=pre + '_softmax', input=pre + '_dense')
 
-    # multiplication to focus the activations (doc, time_pad, rel_senses2id)
+    # multiplication to focus the activations (sample, time_pad, rel_senses2id)
     model.add_node(Activation('linear'), name=pre + '_out', inputs=[pre + '_focus', pre + '_softmax'], merge_mode='mul')
     return pre + '_out'
+
+
+def rel_senses_one_model(model, ins, max_len, embedding_dim, rel_senses2id_size, focus, pre='rsensesone'):
+    """Discourse relation senses model to return one output as Keras Graph."""
+
+    # recurrent layer returning one last output (sample, rel_senses2id)
+    model.add_node(GRU(rel_senses2id_size, return_sequences=False, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal'), name=pre + '_fwd', input=ins[0])
+    return pre + '_fwd'
 
 
 ### Build index
@@ -95,6 +104,36 @@ def decode_x_rel_senses(x_rel_senses, token_range, relation, rel_senses2id, rel_
             rel_sense = t
     return rel_sense, totals
 
+
+def encode_x_rel_senses_one(rel_sense, rel_senses2id, rel_senses2id_size, oov_key=""):
+    """Encode discourse relation senses as one normalized vector (sample, rel_senses2id)."""
+
+    # one-hot encode sense
+    try:
+        i = rel_senses2id[rel_sense]
+    except KeyError:  # missing in vocabulary
+        i = rel_senses2id[oov_key]
+    x = np.zeros((rel_senses2id_size,), dtype=np.float32)
+    x[i] = 1.
+    return x
+
+
+def decode_x_rel_senses_one(x_rel_senses_one, rel_senses2id, rel_senses2id_size):
+    """Decode one discourse relation sense from a normalized vector."""
+
+    # normalize by rows to [0,1] interval
+    x_sum = np.sum(x_rel_senses_one)
+    totals = x_rel_senses_one / x_sum
+    totals[x_sum == 0.] = x_rel_senses_one[x_sum == 0.]  # prevent NaN
+
+    # return most probable sense
+    rel_sense = None
+    max_total = -1.
+    for t, j in rel_senses2id.items():
+        if totals[j] > max_total:
+            max_total = totals[j]
+            rel_sense = t
+    return rel_sense, totals
 
 
 ### Tests
@@ -184,6 +223,34 @@ def test_decode_x_rel_types():
     assert sense_0 == t_sense_0
 
     sense_1, totals_1 = decode_x_rel_senses(x_rel_senses_1, range(token_start, token_end), relation, rel_senses2id, rel_senses2id_size)
+    assert sense_1 == t_sense_1
+
+def test_encode_x_rel_senses_one():
+    rel_senses2id = {None: 0, "": 1, "Comparison.Contrast": 2, "Comparison.Concession": 3, "Contingency.Condition": 4}
+    rel_senses2id_size = len(rel_senses2id)
+    rel_sense_0 = "Comparison.Contrast"
+    t_x_0 = [0, 0, 1, 0, 0]
+    rel_sense_1 = "Expansion.Alternative"
+    t_x_1 = [0, 1, 0, 0, 0]
+
+    x_0 = encode_x_rel_senses_one(rel_sense_0, rel_senses2id, rel_senses2id_size)
+    assert (x_0 == t_x_0).all()
+
+    x_1 = encode_x_rel_senses_one(rel_sense_1, rel_senses2id, rel_senses2id_size)
+    assert (x_1 == t_x_1).all()
+
+def test_decode_x_rel_types():
+    rel_senses2id = {None: 0, "": 1, "Comparison.Contrast": 2, "Comparison.Concession": 3, "Contingency.Condition": 4}
+    rel_senses2id_size = len(rel_senses2id)
+    x_rel_senses_one_0 = [0, 0, 1, 0, 0]
+    t_sense_0 = "Comparison.Contrast"
+    x_rel_senses_one_1 = [0, 1, 0, 0, 0]
+    t_sense_1 = ""
+
+    sense_0, totals_0 = decode_x_rel_senses_one(x_rel_senses_one_0, rel_senses2id, rel_senses2id_size)
+    assert sense_0 == t_sense_0
+
+    sense_1, totals_1 = decode_x_rel_senses_one(x_rel_senses_one_1, rel_senses2id, rel_senses2id_size)
     assert sense_1 == t_sense_1
 
 if __name__ == '__main__':
