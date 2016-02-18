@@ -12,20 +12,18 @@ DIST_PACKAGES='/usr/lib/python*/dist-packages'
 
 # Initialization
 sudo() { [ -x "/usr/bin/sudo" ] && /usr/bin/sudo "$@" || "$@"; }
-[ ! -x "/usr/bin/$PYTHON_EXE" ] && sudo apt-get install -y "$PYTHON_EXE"
+sudo apt-get install -y "$PYTHON_EXE" python-pip python-virtualenv git
 
 cd "${0%/*}"
 virtualenv --prompt="$NAME" --python="$PYTHON_EXE"  venv || exit 1
 source venv/bin/activate
 [ ! -e "$SRC" ] && mkdir "$SRC"
 
-# Prerequisites for pip
-sudo apt-get install -y git
-
-# Prerequisites general
-sudo apt-get install -y python-numpy python-scipy
-[ ! -d $SITE_PACKAGES/numpy ] && cp -a $DIST_PACKAGES/numpy* $SITE_PACKAGES
-[ ! -d $SITE_PACKAGES/scipy ] && cp -a $DIST_PACKAGES/scipy* $SITE_PACKAGES
+# Prerequisites for Theano
+sudo apt-get install -y python-dev libopenblas-dev liblapack-dev g++
+#sudo apt-get install -y python-numpy python-scipy
+#[ ! -d $SITE_PACKAGES/numpy ] && cp -a $DIST_PACKAGES/numpy* $SITE_PACKAGES
+#[ ! -d $SITE_PACKAGES/scipy ] && cp -a $DIST_PACKAGES/scipy* $SITE_PACKAGES
 
 # Prerequisites for Keras
 sudo apt-get install -y python-h5py libyaml-dev graphviz
