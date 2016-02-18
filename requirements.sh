@@ -10,17 +10,19 @@ PYTHON_EXE="python2"
 SITE_PACKAGES='venv/lib/python*/site-packages'
 DIST_PACKAGES='/usr/lib/python*/dist-packages'
 
-# Initialization
+# Initialization and essentials
+set -e
 sudo() { [ -x "/usr/bin/sudo" ] && /usr/bin/sudo "$@" || "$@"; }
-sudo apt-get install -y "$PYTHON_EXE" python-pip python-virtualenv git
+sudo apt-get install -y python-pip python-virtualenv git
 
+# Create virtualenv
 cd "${0%/*}"
 virtualenv --prompt="$NAME" --python="$PYTHON_EXE"  venv || exit 1
 source venv/bin/activate
 [ ! -e "$SRC" ] && mkdir "$SRC"
 
 # Prerequisites for Theano
-sudo apt-get install -y python-dev libopenblas-dev liblapack-dev g++
+sudo apt-get install -y g++ gfortran python-dev libopenblas-dev liblapack-dev
 #sudo apt-get install -y python-numpy python-scipy
 #[ ! -d $SITE_PACKAGES/numpy ] && cp -a $DIST_PACKAGES/numpy* $SITE_PACKAGES
 #[ ! -d $SITE_PACKAGES/scipy ] && cp -a $DIST_PACKAGES/scipy* $SITE_PACKAGES

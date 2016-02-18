@@ -85,7 +85,7 @@ args = argp.parse_args()
 
 # defaults
 epochs = 10000
-batch_size = 20
+batch_size = 32
 
 word_crop = 100  #= max([ len(s) for s in train_words ])
 embedding_dim = 40  #= 40
@@ -118,8 +118,11 @@ if args.clean and os.path.isdir(args.experiment_dir):
 if not os.path.isdir(args.experiment_dir):
     os.makedirs(args.experiment_dir)
 f_log = codecs.open(console_log, mode='a', encoding='utf8')
-sys.stdout.files.append(f_log)
-sys.stderr.files.append(f_log)
+try:
+    sys.stdout.files.append(f_log)
+    sys.stderr.files.append(f_log)
+except AttributeError:
+    f_log.close()
 
 log.info("configuration ({})".format(args.experiment_dir))
 for var in ['args.experiment_dir', 'args.train_dir', 'args.valid_dir', 'args.test_dir', 'args.output_dir', 'K._config', 'os.getenv("THEANO_FLAGS")', 'epochs', 'batch_size', 'word_crop', 'embedding_dim', 'dropout_p', 'words2id_size', 'skipgram_window_size', 'skipgram_negative_samples', 'skipgram_offsets', 'filter_types', 'filter_senses', 'max_len']:

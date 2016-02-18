@@ -5,9 +5,11 @@
 #   DATAT=en-dev DATAV=en-trial DATAX=en-trial
 #   DATAT=zh-train DATAV=zh-dev DATAX=zh-trial
 #   DATAT=zh-dev DATAV=zh-trial DATAX=zh-trial
-#   NAME=conll16st-v20-12
+#   NAME=conll16st-v20-16
 #   docker build -t $NAME .
 #   docker run -d -v /srv/storage/conll16st:/srv/ex --name $NAME-$DATAT $NAME ex/$NAME-$DATAT conll16st-$DATAT conll16st-$DATAV conll16st-$DATAX ex/$NAME-$DATAT --clean
+#     or: -e THEANO_FLAGS='openmp=True'
+#     or: -e THEANO_FLAGS='device=gpu,floatX=float32,nvcc.fastmath=True,lib.cnmem=0.7'
 #   docker logs -f $NAME-$DATAT
 
 FROM debian:jessie
@@ -21,7 +23,13 @@ RUN apt-get update -qq \
  && apt-get install -y \
     python \
     python-pip \
-    python-virtualenv
+    python-virtualenv \
+    git
+
+RUN apt-get install -y \
+    g++ gfortran python-dev libopenblas-dev liblapack-dev \
+    python-h5py libyaml-dev graphviz \
+    pkg-config libpng-dev libfreetype6-dev
 
 # copy datasets
 ADD conll16st-en-trial/ ./conll16st-en-trial/
