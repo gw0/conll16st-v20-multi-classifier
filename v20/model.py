@@ -277,8 +277,8 @@ class SenseValidation(Callback):
             })
 
             # evaluate
-            if 'x_rel_marking' in y:
-                rel_marking_loss = np.sum((y['x_rel_marking'][0] - x1_rel_marking) ** 2) / y['x_rel_marking'][0].shape[0]
+            #if 'x_rel_marking' in y:
+            #    rel_marking_loss = np.sum((y['x_rel_marking'][0] - x1_rel_marking) ** 2) / y['x_rel_marking'][0].shape[0]
 
             if 'x_rel_types' in y:
                 rel_type, rel_type_totals = decode_x_rel_types(y['x_rel_types'][0], range(token_start, token_end), self.rel_parts[rel_id], self.rel_types2id, self.rel_types2id_size)
@@ -302,8 +302,9 @@ class SenseValidation(Callback):
                 # print (1 - np.repeat(x1_rel_focus, 5).reshape(102,5)) * y['x_rel_types'][0]
                 # print x1_rel_types
 
-        print len(self.rel_ids), rel_types_matching, rel_senses_matching, rel_senses_one_matching, "{:.4f}".format(rel_marking_loss)
-        logs[self.prefix + 'rel_marking_loss'] = rel_marking_loss
+        print len(self.rel_ids), rel_types_matching, rel_senses_matching, rel_senses_one_matching
+        #, "{:.4f}".format(rel_marking_loss)
+        #logs[self.prefix + 'rel_marking_loss'] = rel_marking_loss
         logs[self.prefix + 'rel_types'] = float(rel_types_matching) / len(self.rel_ids)
         logs[self.prefix + 'rel_senses'] = float(rel_senses_matching) / len(self.rel_ids)
         logs[self.prefix + 'rel_senses_one'] = float(rel_senses_one_matching) / len(self.rel_ids)

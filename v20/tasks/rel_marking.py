@@ -20,7 +20,7 @@ from conll16st.relations import tag_to_rtsip, filter_tags
 def rel_marking_model(model, ins, max_len, embedding_dim, rel_marking2id_size, pre='rmarking'):
     """Discourse relation marking model as Keras Graph."""
 
-    # Discourse relation marking dense neural network (sample, time_pad, rel_marking2id)
+    # discourse relation marking dense neural network (sample, time_pad, rel_marking2id)
     model.add_node(TimeDistributedDense(rel_marking2id_size, init='he_uniform'), name=pre + '_dense', input=ins[0])
     model.add_node(Activation('softmax'), name=pre + '_softmax', input=pre + '_dense')
     return pre + '_softmax'
