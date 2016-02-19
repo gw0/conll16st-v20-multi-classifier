@@ -306,16 +306,51 @@ class PlotHistory(CSVHistory):
         plt.close()
 
 
+from keras.callbacks import Callback
+
+class EvaluateAllLosses(Callback):
+    """Callback to evaluate all weighted losses individually."""
+
+    def __init__(self, prefix, postfix, data, batch_size):
+        super(EvaluateAllLosses, self).__init__()
+        self.prefix = prefix
+        self.postfix = postfix
+        self.data = data
+        self.batch_size = batch_size
+
+    def on_epoch_end(self, epoch, logs={}):
+        # make predictions
+        x = self.data
+        losses = self.model.evaluate(x, batch_size=self.batch_size, all_losses=True)
+
+        # make losses available in logs
+        for i, output_name in enumerate(["loss"] + self.model.output_order):
+            logs[self.prefix + output_name + self.postfix] = losses[i]
+            #print "\n", losses[i], self.prefix + output_name + self.postfix,
+
+
 # train model
 log.info("train model")
 train_iter = batch_generator(word_crop, max_len, batch_size, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
 train_snapshot = next(batch_generator(word_crop, max_len, len(train_rel_ids), train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size))
 valid_snapshot = next(batch_generator(word_crop, max_len, len(valid_rel_ids), valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size))
+plot_fields = [
+    'experiment', 'epoch',
+    'loss', 'val_loss',
+    'x_skipgram_loss', 'val_x_skipgram_loss',
+    'x_pos_tags_loss', 'val_x_pos_tags_loss',
+    'x_rel_marking_loss', 'val_x_rel_marking_loss',
+    #'x_rel_types_loss', 'val_x_rel_types_loss', 'rel_types', 'val_rel_types',
+    #'x_rel_senses_loss', 'val_x_rel_senses_loss', 'rel_senses', 'val_rel_senses'
+    'x_rel_senses_one_loss', 'val_x_rel_senses_one_loss', 'rel_senses_one', 'val_rel_senses_one',
+]
 callbacks = [
-    RelationMetrics("", train_snapshot, batch_size, word_crop, max_len, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, train_relations_gold, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
-    RelationMetrics("val_", valid_snapshot, batch_size, word_crop, max_len, valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
+    EvaluateAllLosses("", "_loss", train_snapshot, batch_size_valid),
+    EvaluateAllLosses("val_", "_loss", valid_snapshot, batch_size_valid),
+    RelationMetrics("", train_snapshot, batch_size_valid, word_crop, max_len, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, train_relations_gold, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
+    RelationMetrics("val_", valid_snapshot, batch_size_valid, word_crop, max_len, valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
     #CSVHistory(metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_types', 'rel_senses', 'val_rel_types', 'val_rel_senses'], others={"experiment": args.experiment_dir}),
-    PlotHistory(metrics_png, metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_marking_loss', 'rel_types', 'rel_senses', 'rel_senses_one', 'val_loss', 'val_rel_types', 'val_rel_senses', 'val_rel_senses_one'], others={"experiment": args.experiment_dir}),
+    PlotHistory(metrics_png, metrics_csv, fieldnames=plot_fields, others={"experiment": args.experiment_dir}),
     ModelCheckpoint(filepath=weights_hdf5),
     ModelCheckpoint(monitor='loss', mode='min', filepath=weights_hdf5, save_best_only=True),
     EarlyStopping(monitor='loss', mode='min', patience=epochs_patience),
