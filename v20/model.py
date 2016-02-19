@@ -33,9 +33,9 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, skipgram_offse
     model = Graph()
     shared_layers = 2
     loss = {
-        #'x_skipgram': 'mse',
-        #'x_pos_tags': 'categorical_crossentropy',
-        #'x_rel_marking': 'categorical_crossentropy',
+        'x_skipgram': 'mse',
+        'x_pos_tags': 'categorical_crossentropy',
+        'x_rel_marking': 'categorical_crossentropy',
         #'x_rel_types': 'mse',
         #'x_rel_senses': 'mse',
         'x_rel_senses_one': 'categorical_crossentropy',

@@ -5,10 +5,10 @@
 #   DATAT=en-dev DATAV=en-trial DATAX=en-trial
 #   DATAT=zh-train DATAV=zh-dev DATAX=zh-trial
 #   DATAT=zh-dev DATAV=zh-trial DATAX=zh-trial
-#   NAME=conll16st-v20-18
+#   NAME=conll16st-v20-19 ; echo -ne "\ek${NAME:(-6)}-$DATAT\e\\"
 #   docker build -t $NAME .
-#   docker run -d -v /srv/storage/conll16st:/srv/ex --name $NAME-$DATAT $NAME ex/$NAME-$DATAT conll16st-$DATAT conll16st-$DATAV conll16st-$DATAX ex/$NAME-$DATAT --clean
-#     or: -e THEANO_FLAGS='openmp=True'
+#   docker run -d -v /srv/storage/conll16st:/srv/ex -e OMP_NUM_THREADS=1 --name $NAME-$DATAT $NAME ex/$NAME-$DATAT conll16st-$DATAT conll16st-$DATAV conll16st-$DATAX ex/$NAME-$DATAT --clean
+#     or: -e THEANO_FLAGS='openmp=True' -e OMP_NUM_THREADS=1
 #     or: -e THEANO_FLAGS='device=gpu,floatX=float32,nvcc.fastmath=True,lib.cnmem=0.7'
 #   docker logs -f $NAME-$DATAT
 #     less +F /srv/storage/conll16st/$NAME-$DATAT/console.log
@@ -52,6 +52,9 @@ ADD v20/ ./v20/
 RUN useradd -r -d /srv parser \
  && mkdir -p /srv/ex \
  && chown -R parser:parser /srv
+
+#XXX: patch Keras
+ADD models.py /srv/venv/lib/python2.7/site-packages/keras/models.py
 
 # expose interface
 VOLUME /srv/ex
