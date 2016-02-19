@@ -72,8 +72,8 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, skipgram_offse
         model.add_node(TimeDistributedDense(embedding_dim, init='he_uniform'), name=shared_join, inputs=[shared_prev, shared_fwd, shared_bck], merge_mode='concat')
         model.add_node(BatchNormalization(mode=0, axis=2), name=shared_norm, input=shared_join)
         if dropout_p > 0.:
-            model.add_node(Dropout(dropout_p), name=shared_drop, input=shared_norm)
-            #model.add_node(GaussianDropout(dropout_p), name=shared_drop, input=shared_join)
+            #model.add_node(Dropout(dropout_p), name=shared_drop, input=shared_norm)
+            model.add_node(GaussianDropout(dropout_p), name=shared_drop, input=shared_norm)
         shared_prev = shared_drop
 
     # model: skip-gram labels (sample, time_pad, offset)
