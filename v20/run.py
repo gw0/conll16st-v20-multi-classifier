@@ -84,12 +84,13 @@ argp.add_argument('--clean', action='store_true',
 args = argp.parse_args()
 
 # defaults
-epochs = 10000
+epochs = 1000
+epochs_patience = 100
 batch_size = 32
 
 word_crop = 100  #= max([ len(s) for s in train_words ])
 embedding_dim = 40  #= 40
-dropout_p = 0.  #= 0.5
+dropout_p = 0.5  #= 0.5
 words2id_size = 50000  #= None is computed
 skipgram_window_size = 10
 skipgram_negative_samples = skipgram_window_size  #= skipgram_window_size
@@ -125,7 +126,7 @@ except AttributeError:
     f_log.close()
 
 log.info("configuration ({})".format(args.experiment_dir))
-for var in ['args.experiment_dir', 'args.train_dir', 'args.valid_dir', 'args.test_dir', 'args.output_dir', 'K._config', 'os.getenv("THEANO_FLAGS")', 'epochs', 'batch_size', 'word_crop', 'embedding_dim', 'dropout_p', 'words2id_size', 'skipgram_window_size', 'skipgram_negative_samples', 'skipgram_offsets', 'filter_types', 'filter_senses', 'max_len']:
+for var in ['args.experiment_dir', 'args.train_dir', 'args.valid_dir', 'args.test_dir', 'args.output_dir', 'K._config', 'os.getenv("THEANO_FLAGS")', 'epochs', 'epochs_patience', 'batch_size', 'word_crop', 'embedding_dim', 'dropout_p', 'words2id_size', 'skipgram_window_size', 'skipgram_negative_samples', 'skipgram_offsets', 'filter_types', 'filter_senses', 'max_len']:
     log.info("  {}: {}".format(var, eval(var)))
 
 # load datasets
@@ -313,8 +314,8 @@ callbacks = [
     #CSVHistory(metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_types', 'rel_senses', 'val_rel_types', 'val_rel_senses'], others={"experiment": args.experiment_dir}),
     PlotHistory(metrics_png, metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_marking_loss', 'rel_types', 'rel_senses', 'rel_senses_one', 'val_rel_types', 'val_rel_senses', 'val_rel_senses_one'], others={"experiment": args.experiment_dir}),
     ModelCheckpoint(filepath=weights_hdf5),
-    #ModelCheckpoint(monitor='loss', mode='min', filepath=weights_hdf5, save_best_only=True),
-    #EarlyStopping(monitor='loss', mode='min', patience=100),
+    ModelCheckpoint(monitor='loss', mode='min', filepath=weights_hdf5, save_best_only=True),
+    EarlyStopping(monitor='loss', mode='min', patience=epochs_patience),
 ]
 model.fit_generator(train_iter, nb_epoch=epochs, samples_per_epoch=len(train_rel_ids), callbacks=callbacks)
 
