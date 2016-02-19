@@ -85,8 +85,9 @@ args = argp.parse_args()
 
 # defaults
 epochs = 1000
-epochs_patience = 100
+epochs_patience = 20
 batch_size = 32
+batch_size_valid = 512
 
 word_crop = 100  #= max([ len(s) for s in train_words ])
 embedding_dim = 40  #= 40
@@ -126,7 +127,7 @@ except AttributeError:
     f_log.close()
 
 log.info("configuration ({})".format(args.experiment_dir))
-for var in ['args.experiment_dir', 'args.train_dir', 'args.valid_dir', 'args.test_dir', 'args.output_dir', 'K._config', 'os.getenv("THEANO_FLAGS")', 'epochs', 'epochs_patience', 'batch_size', 'word_crop', 'embedding_dim', 'dropout_p', 'words2id_size', 'skipgram_window_size', 'skipgram_negative_samples', 'skipgram_offsets', 'filter_types', 'filter_senses', 'max_len']:
+for var in ['args.experiment_dir', 'args.train_dir', 'args.valid_dir', 'args.test_dir', 'args.output_dir', 'K._config', 'os.getenv("THEANO_FLAGS")', 'epochs', 'epochs_patience', 'batch_size', 'batch_size_valid', 'word_crop', 'embedding_dim', 'dropout_p', 'words2id_size', 'skipgram_window_size', 'skipgram_negative_samples', 'skipgram_offsets', 'filter_types', 'filter_senses', 'max_len']:
     log.info("  {}: {}".format(var, eval(var)))
 
 # load datasets
