@@ -283,10 +283,11 @@ class PlotHistory(CSVHistory):
         x = range(len(self.epoch))
         for k in self.fieldnames:
             if k in self.history:
+                vals = [ min(y, 1.5) for y in self.history[k] ]  #XXX: hack for large values
                 if k.endswith('loss'):  #XXX: hack for loss functions
-                    plt.plot(x, [ (y / self.history[k][0]) for y in self.history[k] ], label=k)
+                    plt.plot(x, [ (y / vals[0]) for y in vals ], label=k)
                 else:
-                    plt.plot(x, self.history[k], label=k)
+                    plt.plot(x, vals, label=k)
 
         plt.title(self.others['experiment'])  #XXX
         plt.xlabel('epochs')
