@@ -7,7 +7,7 @@
 #   DATAT=zh-dev DATAV=zh-trial DATAX=zh-trial
 #   NAME=conll16st-v20-19 ; echo -ne "\ek${NAME:(-6)}-$DATAT\e\\"
 #   docker build -t $NAME .
-#   docker run -d -v /srv/storage/conll16st:/srv/ex -e OMP_NUM_THREADS=1 --name $NAME-$DATAT $NAME ex/$NAME-$DATAT conll16st-$DATAT conll16st-$DATAV conll16st-$DATAX ex/$NAME-$DATAT --clean
+#   docker run -d -v /srv/storage/conll16st:/srv/ex -e OMP_NUM_THREADS=1 -m 4G --memory-swap 4G --name $NAME-$DATAT $NAME ex/$NAME-$DATAT conll16st-$DATAT conll16st-$DATAV conll16st-$DATAX ex/$NAME-$DATAT --clean
 #     or: -e THEANO_FLAGS='openmp=True' -e OMP_NUM_THREADS=1
 #     or: -e THEANO_FLAGS='device=gpu,floatX=float32,nvcc.fastmath=True,lib.cnmem=0.7'
 #   docker logs -f $NAME-$DATAT
