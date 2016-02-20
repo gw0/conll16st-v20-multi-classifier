@@ -88,6 +88,7 @@ epochs = 1000
 epochs_patience = 20
 batch_size = 32
 batch_size_valid = 512
+snapshot_size = 5000
 
 word_crop = 100  #= max([ len(s) for s in train_words ])
 embedding_dim = 40  #= 40
@@ -333,8 +334,8 @@ class EvaluateAllLosses(Callback):
 # train model
 log.info("train model")
 train_iter = batch_generator(word_crop, max_len, batch_size, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
-train_snapshot = next(batch_generator(word_crop, max_len, len(train_rel_ids), train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size))
-valid_snapshot = next(batch_generator(word_crop, max_len, len(valid_rel_ids), valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size))
+train_snapshot = next(batch_generator(word_crop, max_len, min(len(train_rel_ids), snapshot_size), train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size))
+valid_snapshot = next(batch_generator(word_crop, max_len, min(len(valid_rel_ids), snapshot_size), valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size))
 plot_fields = [
     'experiment', 'epoch',
     'loss', 'val_loss',
