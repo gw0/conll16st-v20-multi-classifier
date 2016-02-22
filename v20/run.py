@@ -286,14 +286,31 @@ class PlotHistory(CSVHistory):
         super(PlotHistory, self).on_epoch_end(epoch, logs=logs)
         self.save_png()
 
-    def save_png(self, title=None, crop_max=1.5, normalize_endswith='loss'):
+    def save_png(self, title=None, crop_max=1.5, normalize_endswith='loss', colors=None):
         if title is None:
             title = ", ".join(self.others.values())
+        if colors is None:
+            n_metrics = len(self.png_fields[0])
+            cmap = plt.get_cmap('nipy_spectral')
+            cmap_diff = cmap.N / (n_metrics - 1)
+            colors = [ cmap(i * cmap_diff) for i in range(n_metrics) ]
 
         fig, axarr = plt.subplots(len(self.png_fields), sharex=True)
 
         x = range(len(self.epoch))
         for fields, ax in zip(self.png_fields, axarr):
+            # configure plot
+            ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+            ax.xaxis.set_minor_locator(MultipleLocator(base=10))
+            ax.set_ylim(ymin=0.)
+            ax.yaxis.set_minor_locator(MultipleLocator(base=0.05))
+            #ax.set_yscale('log')
+            #ax.set_ylim(ymin=0.1)
+            #ax.yaxis.set_major_locator(LogLocator(base=2.))
+            #ax.yaxis.set_major_formatter(ScalarFormatter())
+            ax.grid(True)
+            ax.set_color_cycle(colors)
+
             for k in fields:
                 if k in self.history:
                     vals = self.history[k]
@@ -309,16 +326,7 @@ class PlotHistory(CSVHistory):
                     # plot
                     ax.plot(x, vals, label=k)
 
-            ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-            ax.xaxis.set_minor_locator(MultipleLocator(base=10))
-            ax.set_ylim(ymin=0.)
-            ax.yaxis.set_minor_locator(MultipleLocator(base=0.05))
-            #ax.set_yscale('log')
-            #ax.set_ylim(ymin=0.1)
-            #ax.yaxis.set_major_locator(LogLocator(base=2.))
-            #ax.yaxis.set_major_formatter(ScalarFormatter())
-            ax.grid(True)
-            ax.legend(fontsize = 'small', loc='upper left', bbox_to_anchor=(1., 1.))
+            ax.legend(fontsize = 'x-small', loc='upper left', bbox_to_anchor=(1., 1.))
 
         ax.set_xlabel('epochs')
         fig.suptitle(title, fontsize='large', y=1.)
@@ -364,10 +372,11 @@ csv_fields = [
     'x_rel_types_one_loss', 'val_x_rel_types_one_loss', 'rel_types_one', 'val_rel_types_one',
     #'x_rel_senses_loss', 'val_x_rel_senses_loss', 'rel_senses', 'val_rel_senses'
     'x_rel_senses_one_loss', 'val_x_rel_senses_one_loss', 'rel_senses_one', 'val_rel_senses_one',
+    'x_rel_focus',
 ]
 png_fields = [
-    ['epoch', 'loss', 'x_skipgram_loss', 'x_pos_tags_loss', 'x_rel_marking_loss', 'x_rel_types_loss', 'rel_types', 'x_rel_types_one_loss', 'rel_types_one', 'x_rel_senses_loss', 'rel_senses', 'x_rel_senses_one_loss', 'rel_senses_one'],
-    ['epoch', 'val_loss', 'val_x_skipgram_loss', 'val_x_pos_tags_loss', 'val_x_rel_marking_loss', 'val_x_rel_types_loss', 'val_rel_types', 'val_x_rel_types_one_loss', 'val_rel_types_one', 'val_x_rel_senses_loss', 'val_rel_senses', 'val_x_rel_senses_one_loss', 'val_rel_senses_one'],
+    ['epoch', 'loss', 'x_skipgram_loss', 'x_pos_tags_loss', 'x_rel_marking_loss', 'x_rel_types_loss', 'rel_types', 'x_rel_types_one_loss', 'rel_types_one', 'x_rel_senses_loss', 'rel_senses', 'x_rel_senses_one_loss', 'rel_senses_one', 'x_rel_focus'],
+    ['epoch', 'val_loss', 'val_x_skipgram_loss', 'val_x_pos_tags_loss', 'val_x_rel_marking_loss', 'val_x_rel_types_loss', 'val_rel_types', 'val_x_rel_types_one_loss', 'val_rel_types_one', 'val_x_rel_senses_loss', 'val_rel_senses', 'val_x_rel_senses_one_loss', 'val_rel_senses_one', 'val_x_rel_focus'],
 ]
 callbacks = [
     EvaluateAllLosses("", "_loss", train_snapshot, batch_size_valid),
