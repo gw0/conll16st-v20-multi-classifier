@@ -11,6 +11,7 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import numpy as np
 from keras.layers.core import Activation, TimeDistributedDense, RepeatVector, Permute
+from keras.layers.recurrent import GRU
 
 from common import build_index
 from conll16st.relations import tag_to_rtsip, filter_tags
@@ -31,6 +32,20 @@ def rel_types_model(model, ins, max_len, embedding_dim, rel_types2id_size, focus
 
     # multiplication to focus the activations (doc, time_pad, rel_types2id)
     model.add_node(Activation('linear'), name=pre + '_out', inputs=[pre + '_focus', pre + '_softmax'], merge_mode='mul')
+    return pre + '_out'
+
+
+def rel_types_one_model(model, ins, max_len, embedding_dim, rel_types2id_size, focus, pre='rtypesone'):
+    """Discourse relation types model to return one output as Keras Graph."""
+
+    # forward recurrent layer returning one last output (sample, rel_types2id)
+    model.add_node(GRU(rel_types2id_size, return_sequences=False, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal'), name=pre + '_fwd', input=ins[0])
+
+    # backward recurrent layer returning one last output (sample, rel_types2id)
+    model.add_node(GRU(rel_types2id_size, return_sequences=False, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal', go_backwards=True), name=pre + '_bck', input=ins[0])
+
+    # join activations (sample, rel_types2id)
+    model.add_node(Activation('linear'), name=pre + '_out', inputs=[pre + '_fwd', pre + '_bck'], merge_mode='ave')
     return pre + '_out'
 
 
@@ -85,6 +100,37 @@ def decode_x_rel_types(x_rel_types, token_range, relation, rel_types2id, rel_typ
         if token_id in relation['Arg1'] or token_id in relation['Arg2'] or token_id in relation['Connective'] or token_id in relation['Punctuation']:
             totals += x_rel_types[i]
             #XXX: / np.max(x_rel_types[i])
+
+    # return most probable type
+    rel_type = None
+    max_total = -1.
+    for t, j in rel_types2id.items():
+        if totals[j] > max_total:
+            max_total = totals[j]
+            rel_type = t
+    return rel_type, totals
+
+
+def encode_x_rel_types_one(rel_type, rel_types2id, rel_types2id_size, oov_key=""):
+    """Encode discourse relation types as one normalized vector (sample, rel_types2id)."""
+
+    # one-hot encode type
+    try:
+        i = rel_types2id[rel_type]
+    except KeyError:  # missing in vocabulary
+        i = rel_types2id[oov_key]
+    x = np.zeros((rel_types2id_size,), dtype=np.float32)
+    x[i] = 1.
+    return x
+
+
+def decode_x_rel_types_one(x_rel_types_one, rel_types2id, rel_types2id_size):
+    """Decode one discourse relation type from a normalized vector."""
+
+    # normalize by rows to [0,1] interval
+    x_sum = np.sum(x_rel_types_one)
+    totals = x_rel_types_one / x_sum
+    totals[x_sum == 0.] = x_rel_types_one[x_sum == 0.]  # prevent NaN
 
     # return most probable type
     rel_type = None
@@ -183,6 +229,34 @@ def test_decode_x_rel_types():
     assert type_0 == t_type_0
 
     type_1, totals_1 = decode_x_rel_types(x_rel_types_1, range(token_start, token_end), relation, rel_types2id, rel_types2id_size)
+    assert type_1 == t_type_1
+
+def test_encode_x_rel_types_one():
+    rel_types2id = {None: 0, '': 1, 'Implicit': 2, 'Explicit': 3, 'EntRel': 4}
+    rel_types2id_size = len(rel_types2id)
+    rel_type_0 = "Implicit"
+    t_x_0 = [0, 0, 1, 0, 0]
+    rel_type_1 = "AltLex"
+    t_x_1 = [0, 1, 0, 0, 0]
+
+    x_0 = encode_x_rel_types_one(rel_type_0, rel_types2id, rel_types2id_size)
+    assert (x_0 == t_x_0).all()
+
+    x_1 = encode_x_rel_types_one(rel_type_1, rel_types2id, rel_types2id_size)
+    assert (x_1 == t_x_1).all()
+
+def test_decode_x_rel_types_one():
+    rel_types2id = {None: 0, '': 1, 'Implicit': 2, 'Explicit': 3, 'EntRel': 4}
+    rel_types2id_size = len(rel_types2id)
+    x_rel_types_one_0 = [0, 0, 1, 0, 0]
+    t_type_0 = "Implicit"
+    x_rel_types_one_1 = [0, 1, 0, 0, 0]
+    t_type_1 = ""
+
+    type_0, totals_0 = decode_x_rel_types_one(x_rel_types_one_0, rel_types2id, rel_types2id_size)
+    assert type_0 == t_type_0
+
+    type_1, totals_1 = decode_x_rel_types_one(x_rel_types_one_1, rel_types2id, rel_types2id_size)
     assert type_1 == t_type_1
 
 if __name__ == '__main__':
