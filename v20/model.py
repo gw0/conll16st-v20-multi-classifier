@@ -40,6 +40,7 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, skipgram_offse
         'x_rel_types_one': 'categorical_crossentropy',
         'x_rel_senses': 'mse',
         'x_rel_senses_one': 'categorical_crossentropy',
+        'x_rel_focus': 'mse',
     }
 
     # input: word ids with masked post-padding (doc, time_pad)
@@ -109,6 +110,11 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, skipgram_offse
     if 'x_rel_senses_one' in loss:
         rel_senses_one_out = rel_senses_one_model(model, ['shared_3'], max_len, embedding_dim, rel_senses2id_size, 'x_rel_focus')
         model.add_output(name='x_rel_senses_one', input=rel_senses_one_out)
+
+    # input: again discourse relation focus marking (doc, time_pad)
+    model.add_node(TimeDistributedDense(1, init='he_uniform'), name='rel_focus_out_1', input='shared_3')
+    model.add_node(Reshape((max_len,)), name='rel_focus_out', input='rel_focus_out_1')
+    model.add_output(name='x_rel_focus', input='rel_focus_out')
 
     model.compile(optimizer='rmsprop', loss=loss)
     return model
