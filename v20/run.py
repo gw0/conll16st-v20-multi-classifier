@@ -204,23 +204,23 @@ from matplotlib.ticker import MaxNLocator, MultipleLocator, LogLocator, ScalarFo
 from keras.callbacks import History
 
 class CSVHistory(History):
-    '''Callback to store history metrics in CSV file.
+    """Callback to store history metrics in CSV file.
 
     # Arguments
         metrics_csv: string, path to save the CSV file.
-        fieldnames: list of fields/columns to store in CSV file.
+        csv_fields: list of fields/columns to store in CSV file.
         others: optional dictionary for fields with static values.
-    '''
+    """
 
-    def __init__(self, metrics_csv, fieldnames=None, others=None):
+    def __init__(self, metrics_csv, csv_fields=None, others=None):
         super(CSVHistory, self).__init__()
-        if fieldnames is None:
-            fieldnames = ['epoch', 'loss', 'val_loss']
+        if csv_fields is None:
+            csv_fields = ['epoch', 'loss', 'val_loss']
         if others is None:
             others = {}
 
         self.metrics_csv = metrics_csv
-        self.fieldnames = fieldnames
+        self.csv_fields = csv_fields
         self.others = others
 
     def on_train_begin(self, logs={}):
@@ -252,11 +252,11 @@ class CSVHistory(History):
 
     def save_csv(self):
         f = open(self.metrics_csv, 'wb')
-        fwriter = csv.DictWriter(f, fieldnames=self.fieldnames, delimiter='\t', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        fwriter = csv.DictWriter(f, fieldnames=self.csv_fields, delimiter='\t', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         fwriter.writeheader()
         for i in range(len(self.epoch)):
             row = {}
-            for k in self.fieldnames:
+            for k in self.csv_fields:
                 if k == 'epoch':  # save epoch numbers
                     row[k] = self.epoch[i]
                 elif k in self.others:  # save other fields
@@ -267,45 +267,64 @@ class CSVHistory(History):
         f.close()
 
 class PlotHistory(CSVHistory):
-    """Callback to plot metrics and store them in CSV file."""
+    """Callback to plot multiple metrics from history.
 
-    def __init__(self, metrics_png, metrics_csv, fieldnames=None, others=None):
-        super(PlotHistory, self).__init__(metrics_csv, fieldnames=fieldnames, others=others)
+    # Arguments
+        metrics_png: string, path to save the PNG image.
+        png_fields: list of lists of fields/columns for each plot.
+        metrics_csv: string, path to save the CSV file (from `CSVHistory`).
+        csv_fields: list of fields/columns to store in CSV file (from `CSVHistory`).
+        others: optional dictionary for fields with static values (from `CSVHistory`).
+    """
+    def __init__(self, metrics_png, png_fields, metrics_csv, csv_fields=None, others=None):
+        super(PlotHistory, self).__init__(metrics_csv, csv_fields=csv_fields, others=others)
 
         self.metrics_png = metrics_png
+        self.png_fields = png_fields
 
     def on_epoch_end(self, epoch, logs={}):
         super(PlotHistory, self).on_epoch_end(epoch, logs=logs)
         self.save_png()
 
-    def save_png(self):
-        fig, ax = plt.subplots()
+    def save_png(self, title=None, crop_max=10.5, normalize_endswith='loss'):
+        if title is None:
+            title = ", ".join(self.others.values())
+
+        fig, axarr = plt.subplots(len(self.png_fields), sharex=True)
 
         x = range(len(self.epoch))
-        for k in self.fieldnames:
-            if k in self.history:
-                vals = [ min(y, 1.5) for y in self.history[k] ]  #XXX: hack for large values
-                if k.endswith('loss'):  #XXX: hack for loss functions
-                    plt.plot(x, [ (y / vals[0]) for y in vals ], label=k)
-                else:
-                    plt.plot(x, vals, label=k)
+        for fields, ax in zip(self.png_fields, axarr):
+            for k in fields:
+                if k in self.history:
+                    vals = self.history[k]
 
-        plt.title(self.others['experiment'])  #XXX
-        plt.xlabel('epochs')
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.xaxis.set_minor_locator(MultipleLocator(base=10))
-        plt.ylim(ymin=0.)
-        ax.yaxis.set_minor_locator(MultipleLocator(base=0.05))
-        #plt.yscale('log')
-        #plt.ylim(ymin=0.1)
-        #ax.yaxis.set_major_locator(LogLocator(base=2.))
-        #ax.yaxis.set_major_formatter(ScalarFormatter())
-        plt.grid(True)
-        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+                    # crop larger values
+                    if crop_max:
+                        vals = [ min(y, crop_max) for y in vals ]
 
-        plt.tight_layout()
-        plt.savefig(self.metrics_png, bbox_inches='tight', dpi=100)
-        plt.close()
+                    # normalize to first value (for loss functions)
+                    if k.endswith(normalize_endswith):
+                        vals = [ (y / vals[0]) for y in vals ]
+
+                    # plot
+                    ax.plot(x, vals, label=k)
+
+            ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+            ax.xaxis.set_minor_locator(MultipleLocator(base=10))
+            ax.set_ylim(ymin=0.)
+            ax.yaxis.set_minor_locator(MultipleLocator(base=0.05))
+            #ax.set_yscale('log')
+            #ax.set_ylim(ymin=0.1)
+            #ax.yaxis.set_major_locator(LogLocator(base=2.))
+            #ax.yaxis.set_major_formatter(ScalarFormatter())
+            ax.grid(True)
+            ax.legend(fontsize = 'small', loc='upper left', bbox_to_anchor=(1., 1.))
+
+        ax.set_xlabel('epochs')
+        fig.suptitle(title, fontsize='large', y=1.)
+        fig.tight_layout()
+        fig.savefig(self.metrics_png, bbox_inches='tight', dpi=100)
+        plt.close(fig)
 
 
 from keras.callbacks import Callback
@@ -335,7 +354,7 @@ log.info("prepare for training")
 train_iter = batch_generator(word_crop, max_len, batch_size, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size)
 train_snapshot = next(batch_generator(word_crop, max_len, min(len(train_rel_ids), snapshot_size), train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size))
 valid_snapshot = next(batch_generator(word_crop, max_len, min(len(valid_rel_ids), snapshot_size), valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size))
-plot_fields = [
+csv_fields = [
     'experiment', 'epoch',
     'loss', 'val_loss',
     'x_skipgram_loss', 'val_x_skipgram_loss',
@@ -345,13 +364,17 @@ plot_fields = [
     #'x_rel_senses_loss', 'val_x_rel_senses_loss', 'rel_senses', 'val_rel_senses'
     'x_rel_senses_one_loss', 'val_x_rel_senses_one_loss', 'rel_senses_one', 'val_rel_senses_one',
 ]
+png_fields = [
+    ['epoch', 'loss', 'x_skipgram_loss', 'x_pos_tags_loss', 'x_rel_marking_loss', 'x_rel_types_loss', 'rel_types', 'x_rel_senses_loss', 'rel_senses', 'x_rel_senses_one_loss', 'rel_senses_one'],
+    ['epoch', 'val_loss', 'val_x_skipgram_loss', 'val_x_pos_tags_loss', 'val_x_rel_marking_loss', 'val_x_rel_types_loss', 'val_rel_types', 'val_x_rel_senses_loss', 'val_rel_senses', 'val_x_rel_senses_one_loss', 'val_rel_senses_one'],
+]
 callbacks = [
     EvaluateAllLosses("", "_loss", train_snapshot, batch_size_valid),
     EvaluateAllLosses("val_", "_loss", valid_snapshot, batch_size_valid),
     RelationMetrics("", train_snapshot, batch_size_valid, word_crop, max_len, train_doc_ids, train_words, train_word_metas, train_pos_tags, train_dependencies, train_parsetrees, train_rel_ids, train_rel_parts, train_rel_types, train_rel_senses, train_relations_gold, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
     RelationMetrics("val_", valid_snapshot, batch_size_valid, word_crop, max_len, valid_doc_ids, valid_words, valid_word_metas, valid_pos_tags, valid_dependencies, valid_parsetrees, valid_rel_ids, valid_rel_parts, valid_rel_types, valid_rel_senses, valid_relations_gold, words2id, words2id_size, skipgram_offsets, pos_tags2id, pos_tags2id_size, rel_types2id, rel_types2id_size, rel_senses2id, rel_senses2id_size, rel_marking2id, rel_marking2id_size),
-    #CSVHistory(metrics_csv, fieldnames=['experiment', 'epoch', 'loss', 'rel_types', 'rel_senses', 'val_rel_types', 'val_rel_senses'], others={"experiment": args.experiment_dir}),
-    PlotHistory(metrics_png, metrics_csv, fieldnames=plot_fields, others={"experiment": args.experiment_dir}),
+    #CSVHistory(metrics_csv, csv_fields, others={"experiment": args.experiment_dir}),
+    PlotHistory(metrics_png, png_fields, metrics_csv, csv_fields, others={"experiment": args.experiment_dir}),
     ModelCheckpoint(filepath=weights_hdf5),
     ModelCheckpoint(monitor='loss', mode='min', filepath=weights_hdf5, save_best_only=True),
     EarlyStopping(monitor='loss', mode='min', patience=epochs_patience),
@@ -360,6 +383,7 @@ callbacks = [
 # train model
 log.info("train model")
 model.fit_generator(train_iter, nb_epoch=epochs, samples_per_epoch=len(train_rel_ids), validation_data=valid_snapshot, callbacks=callbacks)
+log.info("finished training")
 
 # predict model
 # log.info("predict model")
