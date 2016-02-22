@@ -372,11 +372,11 @@ csv_fields = [
     'x_rel_types_one_loss', 'val_x_rel_types_one_loss', 'rel_types_one', 'val_rel_types_one',
     #'x_rel_senses_loss', 'val_x_rel_senses_loss', 'rel_senses', 'val_rel_senses'
     'x_rel_senses_one_loss', 'val_x_rel_senses_one_loss', 'rel_senses_one', 'val_rel_senses_one',
-    'x_rel_focus',
+    'x_rel_focus_out',
 ]
 png_fields = [
     ['epoch', 'loss', 'x_skipgram_loss', 'x_pos_tags_loss', 'x_rel_marking_loss', 'x_rel_types_loss', 'rel_types', 'x_rel_types_one_loss', 'rel_types_one', 'x_rel_senses_loss', 'rel_senses', 'x_rel_senses_one_loss', 'rel_senses_one', 'x_rel_focus'],
-    ['epoch', 'val_loss', 'val_x_skipgram_loss', 'val_x_pos_tags_loss', 'val_x_rel_marking_loss', 'val_x_rel_types_loss', 'val_rel_types', 'val_x_rel_types_one_loss', 'val_rel_types_one', 'val_x_rel_senses_loss', 'val_rel_senses', 'val_x_rel_senses_one_loss', 'val_rel_senses_one', 'val_x_rel_focus'],
+    ['epoch', 'val_loss', 'val_x_skipgram_loss', 'val_x_pos_tags_loss', 'val_x_rel_marking_loss', 'val_x_rel_types_loss', 'val_rel_types', 'val_x_rel_types_one_loss', 'val_rel_types_one', 'val_x_rel_senses_loss', 'val_rel_senses', 'val_x_rel_senses_one_loss', 'val_rel_senses_one', 'val_x_rel_focus_out'],
 ]
 callbacks = [
     EvaluateAllLosses("", "_loss", train_snapshot, batch_size_valid),
