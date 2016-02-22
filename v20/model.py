@@ -31,14 +31,14 @@ from conll16st.relations import rtsip_to_tag
 def build_model(max_len, embedding_dim, dropout_p, words2id_size, skipgram_offsets, pos_tags2id_size, rel_types2id_size, rel_senses2id_size, rel_marking2id_size):
 
     model = Graph()
-    shared_layers = 2
+    shared_layers = 3
     loss = {
         'x_skipgram': 'mse',
         'x_pos_tags': 'categorical_crossentropy',
         'x_rel_marking': 'categorical_crossentropy',
-        #'x_rel_types': 'mse',
+        'x_rel_types': 'mse',
         'x_rel_types_one': 'categorical_crossentropy',
-        #'x_rel_senses': 'mse',
+        'x_rel_senses': 'mse',
         'x_rel_senses_one': 'categorical_crossentropy',
     }
 
@@ -92,22 +92,22 @@ def build_model(max_len, embedding_dim, dropout_p, words2id_size, skipgram_offse
 
     # model: discourse relation types as normalized vectors (sample, time_pad, rel_types2id)
     if 'x_rel_types' in loss:
-        rel_types_out = rel_types_model(model, ['shared_2'], max_len, embedding_dim, rel_types2id_size, 'x_rel_focus')
+        rel_types_out = rel_types_model(model, ['shared_3'], max_len, embedding_dim, rel_types2id_size, 'x_rel_focus')
         model.add_output(name='x_rel_types', input=rel_types_out)
 
     # model: discourse relation senses as normalized vectors (sample, time_pad, rel_senses2id)
     if 'x_rel_senses' in loss:
-        rel_senses_out = rel_senses_model(model, ['shared_2'], max_len, embedding_dim, rel_senses2id_size, 'x_rel_focus')
+        rel_senses_out = rel_senses_model(model, ['shared_3'], max_len, embedding_dim, rel_senses2id_size, 'x_rel_focus')
         model.add_output(name='x_rel_senses', input=rel_senses_out)
 
     # model: discourse relation types as one normalized vector (sample, rel_types2id)
     if 'x_rel_types_one' in loss:
-        rel_types_one_out = rel_types_one_model(model, ['shared_2'], max_len, embedding_dim, rel_types2id_size, 'x_rel_focus')
+        rel_types_one_out = rel_types_one_model(model, ['shared_3'], max_len, embedding_dim, rel_types2id_size, 'x_rel_focus')
         model.add_output(name='x_rel_types_one', input=rel_types_one_out)
 
     # model: discourse relation senses as one normalized vector (sample, rel_senses2id)
     if 'x_rel_senses_one' in loss:
-        rel_senses_one_out = rel_senses_one_model(model, ['shared_2'], max_len, embedding_dim, rel_senses2id_size, 'x_rel_focus')
+        rel_senses_one_out = rel_senses_one_model(model, ['shared_3'], max_len, embedding_dim, rel_senses2id_size, 'x_rel_focus')
         model.add_output(name='x_rel_senses_one', input=rel_senses_one_out)
 
     model.compile(optimizer='rmsprop', loss=loss)
