@@ -87,7 +87,7 @@ args = argp.parse_args()
 epochs = 1000
 epochs_patience = 20
 batch_size = 32
-batch_size_valid = 512
+batch_size_valid = 256
 snapshot_size = 2000
 
 word_crop = 100  #= max([ len(s) for s in train_words ])
@@ -286,11 +286,11 @@ class PlotHistory(CSVHistory):
         super(PlotHistory, self).on_epoch_end(epoch, logs=logs)
         self.save_png()
 
-    def save_png(self, title=None, crop_max=1.5, normalize_endswith='loss', colors=None):
+    def save_png(self, title=None, crop_max=1.4, normalize_endswith='loss', colors=None):
         if title is None:
             title = ", ".join(self.others.values())
         if colors is None:
-            n_metrics = len(self.png_fields[0])
+            n_metrics = len(set(self.png_fields[0]).intersection(self.history.keys()))
             cmap = plt.get_cmap('nipy_spectral')
             cmap_diff = cmap.N / (n_metrics - 1)
             colors = [ cmap(i * cmap_diff) for i in range(n_metrics) ]
@@ -316,7 +316,7 @@ class PlotHistory(CSVHistory):
                     vals = self.history[k]
 
                     # crop larger values
-                    if crop_max:
+                    if crop_max is not None:
                         vals = [ min(y, crop_max) for y in vals ]
 
                     # normalize to first value (for loss functions)
