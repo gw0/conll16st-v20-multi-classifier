@@ -42,11 +42,11 @@ def rel_senses_one_model(model, ins, max_len, embedding_dim, rel_senses2id_size,
     model.add_node(GRU(rel_senses2id_size, return_sequences=False, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal'), name=pre + '_fwd', input=ins[0])
 
     # backward recurrent layer returning one last output (sample, rel_senses2id)
-    #model.add_node(GRU(rel_senses2id_size, return_sequences=False, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal', go_backwards=True), name=pre + '_bck', input=ins[0])
+    model.add_node(GRU(rel_senses2id_size, return_sequences=False, activation='sigmoid', inner_activation='sigmoid', init='he_uniform', inner_init='orthogonal', go_backwards=True), name=pre + '_bck', input=ins[0])
 
     # join activations (sample, rel_senses2id)
-    #model.add_node(Activation('linear'), name=pre + '_out', inputs=[pre + '_fwd', pre + '_bck'], merge_mode='ave')
-    return pre + '_fwd'
+    model.add_node(Activation('linear'), name=pre + '_out', inputs=[pre + '_fwd', pre + '_bck'], merge_mode='ave')
+    return pre + '_out'
 
 
 ### Build index
