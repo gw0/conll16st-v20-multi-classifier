@@ -286,7 +286,7 @@ class PlotHistory(CSVHistory):
         super(PlotHistory, self).on_epoch_end(epoch, logs=logs)
         self.save_png()
 
-    def save_png(self, title=None, crop_max=10.5, normalize_endswith='loss'):
+    def save_png(self, title=None, crop_max=1.5, normalize_endswith='loss'):
         if title is None:
             title = ", ".join(self.others.values())
 
@@ -323,7 +323,7 @@ class PlotHistory(CSVHistory):
         ax.set_xlabel('epochs')
         fig.suptitle(title, fontsize='large', y=1.)
         fig.tight_layout()
-        fig.savefig(self.metrics_png, bbox_inches='tight', dpi=100)
+        fig.savefig(self.metrics_png, bbox_inches='tight', dpi=150)
         plt.close(fig)
 
 
@@ -367,7 +367,7 @@ csv_fields = [
 ]
 png_fields = [
     ['epoch', 'loss', 'x_skipgram_loss', 'x_pos_tags_loss', 'x_rel_marking_loss', 'x_rel_types_loss', 'rel_types', 'x_rel_types_one_loss', 'rel_types_one', 'x_rel_senses_loss', 'rel_senses', 'x_rel_senses_one_loss', 'rel_senses_one'],
-    ['epoch', 'val_loss', 'val_x_skipgram_loss', 'val_x_pos_tags_loss', 'val_x_rel_marking_loss', 'val_rel_types', 'val_x_rel_types_loss', 'val_x_rel_types_one_loss', 'val_rel_types_one', 'val_x_rel_senses_loss', 'val_rel_senses', 'val_x_rel_senses_one_loss', 'val_rel_senses_one'],
+    ['epoch', 'val_loss', 'val_x_skipgram_loss', 'val_x_pos_tags_loss', 'val_x_rel_marking_loss', 'val_x_rel_types_loss', 'val_rel_types', 'val_x_rel_types_one_loss', 'val_rel_types_one', 'val_x_rel_senses_loss', 'val_rel_senses', 'val_x_rel_senses_one_loss', 'val_rel_senses_one'],
 ]
 callbacks = [
     EvaluateAllLosses("", "_loss", train_snapshot, batch_size_valid),

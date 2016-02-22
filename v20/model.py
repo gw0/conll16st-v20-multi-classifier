@@ -232,16 +232,16 @@ def batch_generator(word_crop, max_len, batch_size, doc_ids, words, word_metas, 
                 '_rel_id': _rel_id,
                 '_token_start': _token_start,
                 '_token_end': _token_end,
-                'x_words_pad': np.asarray(x_words_pad, dtype=np.int),
-                'x_words_rand': np.asarray(x_words_rand, dtype=np.int),
-                'x_rel_focus': np.asarray(x_rel_focus, dtype=np.int),
-                'x_rel_marking': np.asarray(x_rel_marking, dtype=np.float32),
-                'x_skipgram': np.asarray(x_skipgram, dtype=np.float32),
-                'x_pos_tags': np.asarray(x_pos_tags, dtype=np.float32),
+                'x_words_pad': np.asarray(x_words_pad, dtype=np.int32),
+                'x_words_rand': np.asarray(x_words_rand, dtype=np.int32),
+                'x_rel_focus': np.asarray(x_rel_focus, dtype=np.int8),
+                'x_rel_marking': np.asarray(x_rel_marking, dtype=np.int8),
+                'x_skipgram': np.asarray(x_skipgram, dtype=np.int8),
+                'x_pos_tags': np.asarray(x_pos_tags, dtype=np.int8),
                 'x_rel_types': np.asarray(x_rel_types, dtype=np.float32),
                 'x_rel_senses': np.asarray(x_rel_senses, dtype=np.float32),
-                'x_rel_types_one': np.asarray(x_rel_types_one, dtype=np.float32),
-                'x_rel_senses_one': np.asarray(x_rel_senses_one, dtype=np.float32),
+                'x_rel_types_one': np.asarray(x_rel_types_one, dtype=np.int8),
+                'x_rel_senses_one': np.asarray(x_rel_senses_one, dtype=np.int8),
             }
 
 
@@ -293,9 +293,6 @@ class RelationMetrics(Callback):
             token_start = x['_token_start'][i]
             token_end = x['_token_end'][i]
 
-            #if 'x_rel_marking' in y:
-            #    rel_marking_loss = np.sum((y['x_rel_marking'][i] - x1_rel_marking) ** 2) / y['x_rel_marking'][i].shape[0]
-
             if 'x_rel_types' in y:
                 rel_type, rel_type_totals = decode_x_rel_types(y['x_rel_types'][i], range(token_start, token_end), self.rel_parts[rel_id], self.rel_types2id, self.rel_types2id_size)
                 if rel_type == self.rel_types[rel_id]:
@@ -324,12 +321,14 @@ class RelationMetrics(Callback):
                 # print x1_rel_types
 
         print "\n", len(self.rel_ids), rel_types_matching, rel_senses_matching, rel_types_one_matching, rel_senses_one_matching
-        #, "{:.4f}".format(rel_marking_loss)
-        #logs[self.prefix + 'rel_marking_loss'] = rel_marking_loss
-        logs[self.prefix + 'rel_types'] = float(rel_types_matching) / len(self.rel_ids)
-        logs[self.prefix + 'rel_senses'] = float(rel_senses_matching) / len(self.rel_ids)
-        logs[self.prefix + 'rel_types_one'] = float(rel_types_one_matching) / len(self.rel_ids)
-        logs[self.prefix + 'rel_senses_one'] = float(rel_senses_one_matching) / len(self.rel_ids)
+        if 'x_rel_types' in y:
+            logs[self.prefix + 'rel_types'] = float(rel_types_matching) / len(self.rel_ids)
+        if 'x_rel_senses' in y:
+            logs[self.prefix + 'rel_senses'] = float(rel_senses_matching) / len(self.rel_ids)
+        if 'x_rel_types_one' in y:
+            logs[self.prefix + 'rel_types_one'] = float(rel_types_one_matching) / len(self.rel_ids)
+        if 'x_rel_senses_one' in y:
+            logs[self.prefix + 'rel_senses_one'] = float(rel_senses_one_matching) / len(self.rel_ids)
 
 
 ### Tests
