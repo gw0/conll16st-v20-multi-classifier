@@ -168,7 +168,7 @@ if not all([ os.path.isfile(pkl) for pkl in [words2id_pkl, pos_tags2id_pkl, rel_
     pos_tags2id, pos_tags2id_size = save_to_pkl(pos_tags2id_pkl, build_pos_tags2id(train_pos_tags))
     rel_types2id, rel_types2id_size = save_to_pkl(rel_types2id_pkl, build_rel_types2id(train_rel_types))
     rel_senses2id, rel_senses2id_size = save_to_pkl(rel_senses2id_pkl, build_rel_senses2id(train_rel_senses))
-    rel_marking2id, rel_marking2id_size = save_to_pkl(rel_marking2id_pkl, build_rel_marking2id(mode='IO-part'))
+    rel_marking2id, rel_marking2id_size = save_to_pkl(rel_marking2id_pkl, build_rel_marking2id(mode='IOBES-part'))
 else:
     log.info("load previous indexes ({})".format(args.experiment_dir))
     words2id, words2id_size = load_from_pkl(words2id_pkl)
