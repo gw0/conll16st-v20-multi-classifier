@@ -315,13 +315,13 @@ class PlotHistory(CSVHistory):
                 if k in self.history:
                     vals = self.history[k]
 
-                    # crop larger values
-                    if crop_max is not None:
-                        vals = [ min(y, crop_max) for y in vals ]
-
                     # normalize to first value (for loss functions)
                     if k.endswith(normalize_endswith):
                         vals = [ (y / vals[0]) for y in vals ]
+
+                    # crop larger values
+                    if crop_max is not None:
+                        vals = [ min(y, crop_max) for y in vals ]
 
                     # plot
                     ax.plot(x, vals, label=k)
