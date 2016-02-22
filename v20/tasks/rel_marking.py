@@ -28,7 +28,7 @@ def rel_marking_model(model, ins, max_len, embedding_dim, rel_marking2id_size, p
 
 ### Build index
 
-def build_rel_marking2id(mode='IO'):
+def build_rel_marking2id(mode='IO-part'):
     """Build vocabulary index for all discourse relation boundary marking (reserved ids: 0 = other)."""
 
     if mode == 'IOBES-part':
@@ -93,6 +93,7 @@ def build_rel_marking2id(mode='IO'):
         }
     else:  # invalid mode
         return None, None
+
     rel_marking2id_size = max([ i  for l in rel_marking2id.values() for i in l ]) + 1
     return rel_marking2id, rel_marking2id_size
 
@@ -165,9 +166,9 @@ def encode_x1_rel_focus(word_metas_slice, max_len, filter_prefixes=None):
 ### Tests
 
 def test_build_rel_marking2id():
-    mode_0 = 'IO'
+    mode_0 = 'IO-part'
     t_size_0 = 5
-    mode_1 = 'IOBES'
+    mode_1 = 'IOBES-part'
     t_size_1 = 17
 
     rel_marking2id, rel_marking2id_size = build_rel_marking2id(mode_0)
@@ -184,7 +185,7 @@ def test_encode_x1_rel_marking():
         {'RelationIDs': [14903, 14904], 'SentenceID': 31, 'RelationTags': ['Implicit:Comparison.Contrast:14903:Arg2', 'Explicit:Comparison.Concession:14904:Arg1'], 'DocID': 'wsj_1000', 'TokenID': 861, 'SentenceOffset': 857, 'Text': 'having', 'ParagraphID': 13, 'RelationSpans': ['Arg2', 'Arg1']},
     ]
     tag = "Implicit:Comparison.Contrast:14903:"
-    mode_01 = 'IO'
+    mode_01 = 'IO-part'
     max_len_0 = 3
     max_len_1 = 5
     t_x_0 = [

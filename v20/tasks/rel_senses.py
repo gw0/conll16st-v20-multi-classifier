@@ -183,7 +183,7 @@ def test_encode_x_rel_senses():
     x_1 = encode_x_rel_senses(word_metas_slice, rel_senses2id, rel_senses2id_size, max_len_1)
     assert (x_1 == t_x_1).all()
 
-def test_decode_x_rel_types():
+def test_decode_x_rel_senses():
     rel_senses2id = {None: 0, "": 1, "Comparison.Contrast": 2, "Comparison.Concession": 3, "Contingency.Condition": 4}
     rel_senses2id_size = len(rel_senses2id)
     relation = {
@@ -245,7 +245,7 @@ def test_encode_x_rel_senses_one():
     x_1 = encode_x_rel_senses_one(rel_sense_1, rel_senses2id, rel_senses2id_size)
     assert (x_1 == t_x_1).all()
 
-def test_decode_x_rel_types():
+def test_decode_x_rel_senses_one():
     rel_senses2id = {None: 0, "": 1, "Comparison.Contrast": 2, "Comparison.Concession": 3, "Contingency.Condition": 4}
     rel_senses2id_size = len(rel_senses2id)
     x_rel_senses_one_0 = [0, 0, 1, 0, 0]
