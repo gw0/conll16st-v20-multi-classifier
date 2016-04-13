@@ -54,7 +54,7 @@ RUN useradd -r -d /srv parser \
  && chown -R parser:parser /srv
 
 #XXX: patch Keras
-ADD models.py /srv/venv/lib/python2.7/site-packages/keras/models.py
+ADD patch-models.py /srv/venv/lib/python2.7/site-packages/keras/models.py
 
 # expose interface
 VOLUME /srv/ex
