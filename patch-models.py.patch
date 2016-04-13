@@ -1,0 +1,53 @@
+--- orig-models.py	2016-04-13 17:37:39.042157373 +0200
++++ models.py	2016-04-13 17:43:28.826166330 +0200
+@@ -1232,6 +1232,7 @@
+         weights = []
+         train_loss = 0.
+         test_loss = 0.
++        all_losses = []
+         for output_name in self.output_order:
+             loss_fn = loss[output_name]
+             output = self.outputs[output_name]
+@@ -1254,7 +1255,9 @@
+             weights.append(weight)
+             weighted_loss = weighted_objective(objectives.get(loss_fn))
+             train_loss += loss_weights.get(output_name, 1.) * weighted_loss(y, y_train, weight, mask)
+-            test_loss += loss_weights.get(output_name, 1.) * weighted_loss(y, y_test, weight, mask)
++            test_loss_1 = loss_weights.get(output_name, 1.) * weighted_loss(y, y_test, weight, mask)
++            test_loss += test_loss_1
++            all_losses.append(test_loss_1)
+ 
+         # deal with accuracy computation
+         if len(self.output_order) == 1:
+@@ -1310,6 +1313,8 @@
+                                               updates=updates, **kwargs)
+         self._test = K.function(test_ins, [test_loss],
+                                 updates=self.state_updates, **kwargs)
++        self._test_all_losses = K.function(test_ins, [test_loss] + all_losses,
++                                           updates=self.state_updates, **kwargs)
+         if self.class_mode:
+             self._test_with_acc = K.function(test_ins, [test_loss, test_accuracy],
+                                              updates=self.state_updates, **kwargs)
+@@ -1406,7 +1411,7 @@
+                             shuffle=shuffle, metrics=metrics)
+         return history
+ 
+-    def evaluate(self, data, batch_size=128, show_accuracy=False,
++    def evaluate(self, data, batch_size=128, show_accuracy=False, all_losses=False,
+                  verbose=0, sample_weight={}):
+         '''Compute the loss on some input data, batch by batch.
+ 
+@@ -1428,10 +1433,12 @@
+                                 'be used if your Graph has exactly one output.'
+                                 ' Otherwise accuracy is ill-defined.')
+             fn = self._test_with_acc
++        elif all_losses:
++            fn = self._test_all_losses
+         else:
+             fn = self._test
+         outs = self._test_loop(fn, ins, batch_size, verbose)
+-        if show_accuracy:
++        if show_accuracy or all_losses:
+             return outs
+         else:
+             return outs[0]

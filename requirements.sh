@@ -35,15 +35,18 @@ sudo apt-get install -y python-h5py libyaml-dev graphviz
 sudo apt-get install -y pkg-config libpng-dev libfreetype6-dev
 
 # Requirements
-pip install git+https://github.com/Theano/Theano.git@7618e10
+pip install git+https://github.com/Theano/Theano.git@rel-0.8.1
 #pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.6.0-cp27-none-linux_x86_64.whl
 pip install pydot-ng
-pip install git+https://github.com/fchollet/keras.git@47aafaa
+pip install git+https://github.com/fchollet/keras.git@0.3.3
 pip install pyparsing
 pip install matplotlib
 
 # Development
 pip install pytest
+
+#XXX: patch Keras
+cp patch-models.py ./venv/lib/python2.7/site-packages/keras/models.py
 
 echo
 echo "Use: . venv/bin/activate"
