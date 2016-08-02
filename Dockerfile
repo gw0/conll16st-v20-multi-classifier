@@ -1,4 +1,4 @@
-# Discourse relation sense classification (CoNLL16st).
+# Docker container for conll16st-v20-multi-classifier
 #
 # Example:
 #   DATAT=en-train DATAV=en-dev DATAX=en-trial MEM=4500M

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Requirements installation for conll16st-multi-classifier-keras
+# Requirements installation for conll16st-v20-multi-classifier
 #
 # Author: gw0 [http://gw.tnode.com/] <gw.2016@tnode.com>
 # License: All rights reserved

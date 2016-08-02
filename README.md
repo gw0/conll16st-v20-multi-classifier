@@ -1,4 +1,4 @@
-conll16st-multi-classifier-v20
+conll16st-v20-multi-classifier
 ==============================
 
 Experiments for CoNLL 2016 Supplementary Task (shallow discourse sense classification) involving deep intermediate/layer-wise multi-task learning using shared representations and bidirectional GRU layers in Keras.
@@ -7,7 +7,7 @@ Experiments for CoNLL 2016 Supplementary Task (shallow discourse sense classific
 
 - <http://www.cs.brandeis.edu/~clp/conll16st/>
 - <http://github.com/attapol/conll16st/>
-- <http://github.com/gw0/conll16st-multi-classifier-v20/>
+- <http://github.com/gw0/conll16st-v20-multi-classifier/>
 
 If you find anything useful, consider citing a **related conference paper**:
 
